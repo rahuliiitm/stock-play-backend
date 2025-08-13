@@ -1,0 +1,11 @@
+import Redis from 'ioredis'
+
+let client: Redis | null = null
+
+export function getRedis(): Redis | null {
+  if (!process.env.REDIS_URL) return null
+  if (!client) {
+    client = new Redis(process.env.REDIS_URL, { lazyConnect: false, maxRetriesPerRequest: 3 })
+  }
+  return client
+} 

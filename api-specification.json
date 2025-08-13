@@ -1,0 +1,485 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "StockPlay API",
+    "version": "0.8.0",
+    "description": "REST API for StockPlay contests, trading, and leaderboards."
+  },
+  "servers": [
+    { "url": "https://api.stockplay.example.com", "description": "Production" },
+    { "url": "http://localhost:3000", "description": "Local" }
+  ],
+  "tags": [
+    { "name": "auth" },
+    { "name": "users" },
+    { "name": "contests" },
+    { "name": "participants" },
+    { "name": "portfolios" },
+    { "name": "trades" },
+    { "name": "leaderboard" },
+    { "name": "stocks" },
+    { "name": "payments" },
+    { "name": "webhooks" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["code", "message"],
+        "properties": {
+          "code": { "type": "string" },
+          "message": { "type": "string" },
+          "details": { "type": "object", "additionalProperties": true }
+        }
+      },
+      "Pagination": {
+        "type": "object",
+        "properties": {
+          "page": { "type": "integer", "minimum": 1 },
+          "pageSize": { "type": "integer", "minimum": 1, "maximum": 100 },
+          "total": { "type": "integer" },
+          "nextCursor": { "type": "string", "nullable": true }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "email": { "type": "string", "format": "email" },
+          "displayName": { "type": "string" },
+          "avatarUrl": { "type": "string", "nullable": true },
+          "role": { "type": "string", "enum": ["user", "admin"] },
+          "status": { "type": "string", "enum": ["active", "suspended", "deleted"] }
+        }
+      },
+      "AuthTokens": {
+        "type": "object",
+        "properties": {
+          "accessToken": { "type": "string" },
+          "refreshToken": { "type": "string" }
+        }
+      },
+      "Contest": {
+        "type": "object",
+        "required": ["id", "name", "slug", "startsAt", "endsAt", "initialBalanceCents", "status", "visibility"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "slug": { "type": "string" },
+          "name": { "type": "string" },
+          "description": { "type": "string", "nullable": true },
+          "visibility": { "type": "string", "enum": ["public", "private"] },
+          "entryFeeCents": { "type": "integer", "default": 0 },
+          "currency": { "type": "string", "default": "USD" },
+          "initialBalanceCents": { "type": "integer" },
+          "maxParticipants": { "type": "integer", "nullable": true },
+          "startsAt": { "type": "string", "format": "date-time" },
+          "endsAt": { "type": "string", "format": "date-time" },
+          "status": { "type": "string", "enum": ["draft", "scheduled", "active", "ended", "cancelled"] },
+          "allowedSymbols": { "type": "array", "items": { "type": "string" }, "nullable": true }
+        }
+      },
+      "Participant": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "contestId": { "type": "string", "format": "uuid" },
+          "userId": { "type": "string", "format": "uuid" },
+          "joinedAt": { "type": "string", "format": "date-time" },
+          "paidEntryFee": { "type": "boolean" },
+          "currentCashCents": { "type": "integer" },
+          "rank": { "type": "integer", "nullable": true }
+        }
+      },
+      "Portfolio": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "participantId": { "type": "string", "format": "uuid" },
+          "cashCents": { "type": "integer" },
+          "positions": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Position" }
+          },
+          "valueCents": { "type": "integer" }
+        }
+      },
+      "Position": {
+        "type": "object",
+        "properties": {
+          "symbol": { "type": "string" },
+          "quantity": { "type": "number" },
+          "avgCostCents": { "type": "integer" },
+          "currentValueCents": { "type": "integer" }
+        }
+      },
+      "Trade": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "portfolioId": { "type": "string", "format": "uuid" },
+          "contestId": { "type": "string", "format": "uuid" },
+          "symbol": { "type": "string" },
+          "side": { "type": "string", "enum": ["BUY", "SELL"] },
+          "quantity": { "type": "number" },
+          "priceCents": { "type": "integer" },
+          "notionalCents": { "type": "integer" },
+          "executedAt": { "type": "string", "format": "date-time" },
+          "quoteSource": { "type": "string" }
+        }
+      },
+      "LeaderboardEntry": {
+        "type": "object",
+        "properties": {
+          "userId": { "type": "string", "format": "uuid" },
+          "displayName": { "type": "string" },
+          "portfolioValueCents": { "type": "integer" },
+          "rank": { "type": "integer" }
+        }
+      },
+      "Quote": {
+        "type": "object",
+        "properties": {
+          "symbol": { "type": "string" },
+          "priceCents": { "type": "integer" },
+          "asOf": { "type": "string", "format": "date-time" },
+          "source": { "type": "string" }
+        }
+      },
+      "Candle": {
+        "type": "object",
+        "properties": {
+          "time": { "type": "string", "format": "date-time" },
+          "open": { "type": "number" },
+          "high": { "type": "number" },
+          "low": { "type": "number" },
+          "close": { "type": "number" },
+          "volume": { "type": "integer" }
+        }
+      }
+    }
+  },
+  "security": [{ "bearerAuth": [] }],
+  "paths": {
+    "/healthz": {
+      "get": {
+        "tags": ["health"],
+        "summary": "Health check",
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/auth/signup": {
+      "post": {
+        "tags": ["auth"],
+        "summary": "Create a user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string", "minLength": 8 },
+                  "displayName": { "type": "string" }
+                }
+              },
+              "examples": {
+                "default": {
+                  "value": { "email": "jane@example.com", "password": "S3curePass!", "displayName": "Jane" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "User created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/User" } } } },
+          "400": { "description": "Validation error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["auth"],
+        "summary": "Login and receive tokens",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string" }
+                }
+              },
+              "examples": {
+                "default": { "value": { "email": "jane@example.com", "password": "S3curePass!" } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Tokens", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthTokens" } } } },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "tags": ["auth"],
+        "summary": "Refresh tokens",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["refreshToken"],
+                "properties": { "refreshToken": { "type": "string" } }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "New tokens", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthTokens" } } } } }
+      }
+    },
+    "/users/me": {
+      "get": {
+        "tags": ["users"],
+        "summary": "Get current user",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "User", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/User" } } } },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/contests": {
+      "get": {
+        "tags": ["contests"],
+        "summary": "List contests",
+        "parameters": [
+          { "in": "query", "name": "status", "schema": { "type": "string" } },
+          { "in": "query", "name": "page", "schema": { "type": "integer", "default": 1 } },
+          { "in": "query", "name": "pageSize", "schema": { "type": "integer", "default": 20 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paged list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/Contest" } }, "pagination": { "$ref": "#/components/schemas/Pagination" } }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["contests"],
+        "summary": "Create contest",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "startsAt", "endsAt", "initialBalanceCents"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "slug": { "type": "string" },
+                  "description": { "type": "string" },
+                  "visibility": { "type": "string", "enum": ["public", "private"], "default": "public" },
+                  "entryFeeCents": { "type": "integer", "default": 0 },
+                  "initialBalanceCents": { "type": "integer" },
+                  "maxParticipants": { "type": "integer" },
+                  "startsAt": { "type": "string", "format": "date-time" },
+                  "endsAt": { "type": "string", "format": "date-time" },
+                  "allowedSymbols": { "type": "array", "items": { "type": "string" } }
+                }
+              },
+              "examples": {
+                "default": {
+                  "value": {
+                    "name": "Weekly Challenge",
+                    "slug": "weekly-challenge",
+                    "initialBalanceCents": 10000000,
+                    "startsAt": "2025-08-18T13:30:00Z",
+                    "endsAt": "2025-08-22T20:00:00Z",
+                    "entryFeeCents": 0
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Contest", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Contest" } } } } }
+      }
+    },
+    "/contests/{id}": {
+      "get": {
+        "tags": ["contests"],
+        "summary": "Get contest",
+        "parameters": [ { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Contest", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Contest" } } } }, "404": { "description": "Not found" } }
+      },
+      "patch": {
+        "tags": ["contests"],
+        "summary": "Update contest",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [ { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } } ],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Contest" } } } },
+        "responses": { "200": { "description": "Updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Contest" } } } } }
+      },
+      "delete": {
+        "tags": ["contests"],
+        "summary": "Delete contest",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [ { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "204": { "description": "Deleted" } }
+      }
+    },
+    "/contests/{id}/join": {
+      "post": {
+        "tags": ["participants"],
+        "summary": "Join a contest",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [ { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } } ],
+        "responses": {
+          "201": { "description": "Joined", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Participant" } } } },
+          "400": { "description": "Invalid state or fee required" },
+          "409": { "description": "Already joined" }
+        }
+      }
+    },
+    "/contests/{id}/participants": {
+      "get": {
+        "tags": ["participants"],
+        "summary": "List participants",
+        "parameters": [ { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "List", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Participant" } } } } } }
+      }
+    },
+    "/contests/{id}/portfolio": {
+      "get": {
+        "tags": ["portfolios"],
+        "summary": "Get my portfolio in contest",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [ { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Portfolio", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Portfolio" } } } }, "404": { "description": "Not joined" } }
+      }
+    },
+    "/contests/{id}/trades": {
+      "post": {
+        "tags": ["trades"],
+        "summary": "Place a trade (market simulated)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [ { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } } ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["symbol", "side", "quantity"],
+                "properties": {
+                  "symbol": { "type": "string" },
+                  "side": { "type": "string", "enum": ["BUY", "SELL"] },
+                  "quantity": { "type": "number", "minimum": 0.0001 }
+                }
+              },
+              "examples": {
+                "buy": { "value": { "symbol": "AAPL", "side": "BUY", "quantity": 2 } }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Trade", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Trade" } } } }, "400": { "description": "Validation error" } }
+      },
+      "get": {
+        "tags": ["trades"],
+        "summary": "List my trades in contest",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [ { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }, { "in": "query", "name": "page", "schema": { "type": "integer", "default": 1 } }, { "in": "query", "name": "pageSize", "schema": { "type": "integer", "default": 20 } } ],
+        "responses": { "200": { "description": "Paged trades", "content": { "application/json": { "schema": { "type": "object", "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/Trade" } }, "pagination": { "$ref": "#/components/schemas/Pagination" } } } } } } }
+      }
+    },
+    "/leaderboard": {
+      "get": {
+        "tags": ["leaderboard"],
+        "summary": "Global leaderboard (optional)",
+        "parameters": [ { "in": "query", "name": "page", "schema": { "type": "integer", "default": 1 } } ],
+        "responses": { "200": { "description": "List", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/LeaderboardEntry" } } } } } }
+      }
+    },
+    "/contests/{id}/leaderboard": {
+      "get": {
+        "tags": ["leaderboard"],
+        "summary": "Contest leaderboard",
+        "parameters": [ { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "List", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/LeaderboardEntry" } } } } } }
+      }
+    },
+    "/stocks/search": {
+      "get": {
+        "tags": ["stocks"],
+        "summary": "Search stock symbols",
+        "parameters": [ { "in": "query", "name": "q", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Symbols", "content": { "application/json": { "schema": { "type": "array", "items": { "type": "object", "properties": { "symbol": { "type": "string" }, "name": { "type": "string" } } } } } } } }
+      }
+    },
+    "/stocks/{symbol}/quote": {
+      "get": {
+        "tags": ["stocks"],
+        "summary": "Get latest quote",
+        "parameters": [ { "in": "path", "name": "symbol", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Quote", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Quote" } } } }, "404": { "description": "Symbol not found" } }
+      }
+    },
+    "/stocks/{symbol}/history": {
+      "get": {
+        "tags": ["stocks"],
+        "summary": "Get historical candles",
+        "parameters": [ { "in": "path", "name": "symbol", "required": true, "schema": { "type": "string" } }, { "in": "query", "name": "from", "schema": { "type": "string", "format": "date" } }, { "in": "query", "name": "to", "schema": { "type": "string", "format": "date" } } ],
+        "responses": { "200": { "description": "Candles", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Candle" } } } } } }
+      }
+    },
+    "/payments/entry-fee": {
+      "post": {
+        "tags": ["payments"],
+        "summary": "Create entry fee payment intent",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "type": "object", "required": ["contestId"], "properties": { "contestId": { "type": "string", "format": "uuid" } } },
+              "examples": { "default": { "value": { "contestId": "b2f44c84-9f8b-4d9e-8c17-1e1e8b1a2e77" } } }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Stripe client secret", "content": { "application/json": { "schema": { "type": "object", "properties": { "clientSecret": { "type": "string" } } } } } }, "400": { "description": "No fee or already joined" } }
+      }
+    },
+    "/webhooks/stripe": {
+      "post": {
+        "tags": ["webhooks"],
+        "summary": "Stripe webhook",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object" } } } },
+        "responses": { "200": { "description": "Processed" } }
+      }
+    }
+  }
+}

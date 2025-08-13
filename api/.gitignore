@@ -1,0 +1,15 @@
+# Node / Nest
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Env / logs
+.env
+.env.*
+server.log
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/ 
