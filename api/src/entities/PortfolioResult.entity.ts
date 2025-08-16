@@ -15,8 +15,8 @@ export class PortfolioResult {
   @Column({ type: 'timestamptz' })
   as_of!: Date
 
-  @Column({ type: 'int' })
-  total_value_cents!: number
+  @Column({ type: 'decimal', precision: 18, scale: 2 })
+  total_value_amount!: number
 
   @Column({ type: 'double precision' })
   return_percent!: number

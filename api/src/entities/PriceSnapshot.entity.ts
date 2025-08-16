@@ -9,8 +9,8 @@ export class PriceSnapshot {
   @Column({ type: 'varchar', length: 16 })
   symbol!: string
 
-  @Column({ type: 'int' })
-  price_cents!: number
+  @Column({ type: 'decimal', precision: 18, scale: 2 })
+  price_amount!: number
 
   @Column({ type: 'timestamptz' })
   as_of!: Date

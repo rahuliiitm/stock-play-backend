@@ -30,11 +30,11 @@ export class Trade {
   @Column({ type: 'numeric', precision: 18, scale: 4 })
   quantity!: string
 
-  @Column({ type: 'int' })
-  price_cents!: number
+  @Column({ type: 'decimal', precision: 18, scale: 2 })
+  price_amount!: number
 
-  @Column({ type: 'int' })
-  notional_cents!: number
+  @Column({ type: 'decimal', precision: 18, scale: 2 })
+  notional_amount!: number
 
   @Column({ type: 'timestamptz' })
   executed_at!: Date

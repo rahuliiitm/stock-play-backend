@@ -10,8 +10,8 @@ export class Portfolio {
   @Column({ type: 'uuid', unique: true })
   participant_id!: string
 
-  @Column({ type: 'int', default: 0 })
-  last_mark_to_market_cents!: number
+  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0 })
+  last_mark_to_market_amount!: number
 
   @UpdateDateColumn({ type: 'timestamptz' })
   updated_at!: Date

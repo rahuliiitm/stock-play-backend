@@ -25,13 +25,12 @@ export class LeaderboardService {
     for (const p of parts) {
       const portfolio = await this.portfolios.findOne({ where: { participant_id: p.id } })
       const pos = await this.positions.find({ where: { portfolio_id: portfolio!.id } })
-      // Sum positions using quote per symbol
       let positionsValue = 0
       for (const x of pos) {
         const q = await this.quotes.getQuote(x.symbol)
         positionsValue += Math.round(q.priceCents * parseFloat(x.quantity))
       }
-      const value = p.current_cash_cents + positionsValue
+      const value = p.current_cash_amount + positionsValue
       const user = await this.users.findOne({ where: { id: p.user_id } })
       results.push({ userId: p.user_id, displayName: user?.display_name ?? user?.email ?? 'user', portfolioValueCents: value, rank: 0 })
     }
@@ -48,7 +47,6 @@ export class LeaderboardService {
   }
 
   async globalLeaderboard() {
-    // Placeholder: return empty array for now
     return []
   }
 } 

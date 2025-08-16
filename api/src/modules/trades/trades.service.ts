@@ -43,13 +43,12 @@ export class TradesService {
     const portfolio = await this.portfolios.findOne({ where: { participant_id: participant.id } })
     if (!portfolio) throw new BadRequestException('Portfolio missing')
 
-    // Mock price: 100.00
-    const priceCents = 10000
-    const notionalCents = Math.round(priceCents * input.quantity)
+    const priceAmount = 10000
+    const notionalAmount = Math.round(priceAmount * input.quantity)
 
     if (input.side === 'BUY') {
-      if (participant.current_cash_cents < notionalCents) throw new BadRequestException('Insufficient cash')
-      participant.current_cash_cents -= notionalCents
+      if (participant.current_cash_amount < notionalAmount) throw new BadRequestException('Insufficient cash')
+      participant.current_cash_amount -= notionalAmount
       await this.participants.save(participant)
 
       let position = await this.positions.findOne({ where: { portfolio_id: portfolio.id, symbol: input.symbol } })
@@ -58,18 +57,16 @@ export class TradesService {
           portfolio_id: portfolio.id,
           symbol: input.symbol,
           quantity: input.quantity.toFixed(4),
-          avg_cost_cents: priceCents,
-          open_value_cents: notionalCents,
-          current_value_cents: notionalCents,
+          avg_cost_amount: priceAmount,
+          current_value_amount: notionalAmount,
         })
       } else {
         const q = parseFloat(position.quantity)
         const newQty = q + input.quantity
-        const newAvgCost = Math.round((q * position.avg_cost_cents + input.quantity * priceCents) / newQty)
+        const newAvgCost = Math.round((q * position.avg_cost_amount + input.quantity * priceAmount) / newQty)
         position.quantity = newQty.toFixed(4)
-        position.avg_cost_cents = newAvgCost
-        position.open_value_cents += notionalCents
-        position.current_value_cents += notionalCents
+        position.avg_cost_amount = newAvgCost
+        position.current_value_amount += notionalAmount
       }
       await this.positions.save(position)
     } else {
@@ -78,14 +75,13 @@ export class TradesService {
       const q = parseFloat(position.quantity)
       if (input.quantity > q) throw new BadRequestException('Insufficient quantity')
 
-      const sellValue = notionalCents
-      participant.current_cash_cents += sellValue
+      const sellValue = notionalAmount
+      participant.current_cash_amount += sellValue
       await this.participants.save(participant)
 
       const remaining = q - input.quantity
       position.quantity = remaining.toFixed(4)
-      position.open_value_cents = Math.max(0, position.open_value_cents - notionalCents)
-      position.current_value_cents = Math.max(0, position.current_value_cents - notionalCents)
+      position.current_value_amount = Math.max(0, position.current_value_amount - notionalAmount)
       await this.positions.save(position)
     }
 
@@ -96,8 +92,8 @@ export class TradesService {
       symbol: input.symbol,
       side: input.side,
       quantity: input.quantity.toFixed(4),
-      price_cents: priceCents,
-      notional_cents: notionalCents,
+      price_amount: priceAmount,
+      notional_amount: notionalAmount,
       executed_at: new Date(),
       quote_source: 'mock',
     } as any)

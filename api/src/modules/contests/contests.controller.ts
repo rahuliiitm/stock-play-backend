@@ -54,8 +54,8 @@ export class ContestsController {
       slug: body.slug ?? body.name.toLowerCase().replace(/\s+/g, '-'),
       description: body.description ?? null,
       visibility: body.visibility ?? 'public',
-      initial_balance_cents: body.initial_balance_cents,
-      entry_fee_cents: body.entry_fee_cents ?? 0,
+      initial_balance_amount: body.initial_balance_cents, // DTO name unchanged for now
+      entry_fee_amount: body.entry_fee_cents ?? 0,
       max_participants: body.max_participants ?? null,
       starts_at: new Date(body.starts_at),
       ends_at: new Date(body.ends_at),

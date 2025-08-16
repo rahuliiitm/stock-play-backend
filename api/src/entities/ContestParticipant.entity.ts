@@ -21,14 +21,14 @@ export class ContestParticipant {
   @Column({ type: 'boolean', default: false })
   paid_entry_fee!: boolean
 
-  @Column({ type: 'int' })
-  starting_balance_cents!: number
+  @Column({ type: 'decimal', precision: 18, scale: 2 })
+  starting_balance_amount!: number
 
-  @Column({ type: 'int' })
-  current_cash_cents!: number
+  @Column({ type: 'decimal', precision: 18, scale: 2 })
+  current_cash_amount!: number
 
-  @Column({ type: 'int', default: 0 })
-  last_value_cents!: number
+  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0 })
+  last_value_amount!: number
 
   @Column({ type: 'int', nullable: true })
   rank!: number | null

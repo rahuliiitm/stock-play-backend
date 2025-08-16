@@ -77,24 +77,24 @@ export class PortfolioJobsService implements OnModuleInit {
             .getOne()
         }
         if (row) {
-          x.current_value_cents = Math.round(row.ltp * 100 * parseFloat(x.quantity))
+          x.current_value_amount = Math.round(row.ltp * 100 * parseFloat(x.quantity))
           await this.positions.save(x)
-          positionsValue += x.current_value_cents
+          positionsValue += x.current_value_amount
         } else if (!eodOnly) {
           const q = await this.quotes.getQuote(x.symbol)
-          x.current_value_cents = Math.round(q.priceCents * parseFloat(x.quantity))
+          x.current_value_amount = Math.round(q.priceCents * parseFloat(x.quantity))
           await this.positions.save(x)
-          positionsValue += x.current_value_cents
+          positionsValue += x.current_value_amount
         }
       }
-      const totalValueCents = p.current_cash_cents + positionsValue
-      const returnPercent = ((totalValueCents - p.starting_balance_cents) / p.starting_balance_cents) * 100
+      const totalValueAmount = p.current_cash_amount + positionsValue
+      const returnPercent = ((totalValueAmount - p.starting_balance_amount) / p.starting_balance_amount) * 100
       await this.results
         .createQueryBuilder()
         .insert()
         .into(PortfolioResult)
-        .values({ contest_id: data.contestId, participant_id: p.id, as_of: asOf, total_value_cents: totalValueCents, return_percent: returnPercent })
-        .orUpdate(['total_value_cents', 'return_percent'], ['contest_id', 'participant_id', 'as_of'], { skipUpdateIfNoValuesChanged: true })
+        .values({ contest_id: data.contestId, participant_id: p.id, as_of: asOf, total_value_amount: totalValueAmount, return_percent: returnPercent })
+        .orUpdate(['total_value_amount', 'return_percent'], ['contest_id', 'participant_id', 'as_of'], { skipUpdateIfNoValuesChanged: true })
         .execute()
     }
     await this.leaderboard.snapshotContest(data.contestId)

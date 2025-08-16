@@ -16,14 +16,11 @@ export class Position {
   @Column({ type: 'numeric', precision: 18, scale: 4 })
   quantity!: string
 
-  @Column({ type: 'int' })
-  avg_cost_cents!: number
+  @Column({ type: 'decimal', precision: 18, scale: 2 })
+  avg_cost_amount!: number
 
-  @Column({ type: 'int' })
-  open_value_cents!: number
-
-  @Column({ type: 'int', default: 0 })
-  current_value_cents!: number
+  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0 })
+  current_value_amount!: number
 
   @ManyToOne(() => Portfolio, (p) => p.positions)
   @JoinColumn({ name: 'portfolio_id' })

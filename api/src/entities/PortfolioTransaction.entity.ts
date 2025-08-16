@@ -16,11 +16,11 @@ export class PortfolioTransaction {
   @Column({ type: 'numeric', precision: 18, scale: 4 })
   quantity_delta!: string
 
-  @Column({ type: 'int' })
-  price_cents!: number
+  @Column({ type: 'decimal', precision: 18, scale: 2 })
+  price_amount!: number
 
-  @Column({ type: 'int' })
-  value_cents!: number
+  @Column({ type: 'decimal', precision: 18, scale: 2 })
+  value_amount!: number
 
   @Column({ type: 'varchar', length: 16 })
   type!: 'BUY' | 'SELL' | 'REBALANCE'

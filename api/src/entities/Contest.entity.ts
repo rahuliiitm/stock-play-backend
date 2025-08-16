@@ -20,14 +20,14 @@ export class Contest {
   @Column({ type: 'varchar', length: 16, default: 'public' })
   visibility!: 'public' | 'private'
 
-  @Column({ type: 'int', default: 0 })
-  entry_fee_cents!: number
+  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0 })
+  entry_fee_amount!: number
 
   @Column({ type: 'char', length: 3, default: 'INR' })
   currency!: string
 
-  @Column({ type: 'int' })
-  initial_balance_cents!: number
+  @Column({ type: 'decimal', precision: 18, scale: 2 })
+  initial_balance_amount!: number
 
   @Column({ type: 'int', nullable: true })
   max_participants!: number | null
