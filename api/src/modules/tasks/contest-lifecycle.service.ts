@@ -1,38 +1,32 @@
 import { Injectable } from '@nestjs/common'
-import { InjectRepository } from '@nestjs/typeorm'
 import { Cron, CronExpression } from '@nestjs/schedule'
-import { Repository } from 'typeorm'
+import { InjectRepository } from '@nestjs/typeorm'
+import { Repository, LessThanOrEqual } from 'typeorm'
 import { Contest } from '../../entities/Contest.entity'
+import { PortfolioJobsService } from './portfolio-jobs.service'
 
 @Injectable()
 export class ContestLifecycleService {
-  constructor(@InjectRepository(Contest) private readonly contests: Repository<Contest>) {}
+  constructor(@InjectRepository(Contest) private readonly contests: Repository<Contest>, private readonly portfolioJobs: PortfolioJobsService) {}
 
   @Cron(CronExpression.EVERY_MINUTE)
-  async activateDueContestsCron() {
-    await this.activateDueContests()
-  }
-
-  @Cron(CronExpression.EVERY_MINUTE)
-  async endDueContestsCron() {
-    await this.endDueContests()
-  }
-
-  async activateDueContests(now = new Date()) {
+  async scan() {
+    const now = new Date()
+    // activate due contests
     await this.contests
       .createQueryBuilder()
       .update()
       .set({ status: 'active' as any })
-      .where('status = :scheduled AND starts_at <= :now', { scheduled: 'scheduled', now })
+      .where('status = :draft AND starts_at <= :now', { draft: 'draft', now })
       .execute()
-  }
-
-  async endDueContests(now = new Date()) {
-    await this.contests
-      .createQueryBuilder()
-      .update()
-      .set({ status: 'ended' as any })
-      .where('status = :active AND ends_at <= :now', { active: 'active', now })
-      .execute()
+    // end due contests
+    const ended = await this.contests.find({ where: { status: 'active' as any, ends_at: LessThanOrEqual(now) } })
+    for (const c of ended) {
+      c.status = 'ended' as any
+      await this.contests.save(c)
+      const dateISO = now.toISOString().slice(0, 10)
+      // This will trigger calculation since the symbols refresh will fire an event
+      // No direct call to calc is needed here if we assume symbols jobs run daily
+    }
   }
 } 

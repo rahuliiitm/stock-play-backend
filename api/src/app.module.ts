@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common'
 import { ConfigModule, ConfigService } from '@nestjs/config'
 import { TypeOrmModule } from '@nestjs/typeorm'
+import { EventEmitterModule } from '@nestjs/event-emitter'
 import { AppController } from './app.controller'
 import { AppService } from './app.service'
 import { HealthModule } from './health/health.module'
@@ -17,11 +18,14 @@ import { TasksModule } from './modules/tasks/tasks.module'
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler'
 import { APP_GUARD } from '@nestjs/core'
 import { ScoringModule } from './modules/scoring/scoring.module'
+import { PortfolioModule } from './modules/portfolio/portfolio.module'
+import { CoreJwtModule } from './modules/common/jwt.module'
 
 @Module({
 	imports: [
 		ConfigModule.forRoot({ isGlobal: true, envFilePath: ['.env', '.env.development'] }),
 		ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
+		EventEmitterModule.forRoot(),
 		TypeOrmModule.forRootAsync({
 			inject: [ConfigService],
 			useFactory: (config: ConfigService) => ({
@@ -45,6 +49,8 @@ import { ScoringModule } from './modules/scoring/scoring.module'
 		WebhooksModule,
 		TasksModule,
 		ScoringModule,
+		PortfolioModule,
+		CoreJwtModule,
 	],
 	controllers: [AppController],
 	providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

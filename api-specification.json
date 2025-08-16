@@ -239,9 +239,9 @@
         "summary": "Refresh tokens",
         "requestBody": {
           "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
+            "content": {
+              "application/json": {
+                "schema": {
                 "type": "object",
                 "required": ["refreshToken"],
                 "properties": { "refreshToken": { "type": "string" } }
@@ -280,24 +280,24 @@
                 "schema": {
                   "type": "object",
                   "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/Contest" } }, "pagination": { "$ref": "#/components/schemas/Pagination" } }
-                }
               }
             }
           }
         }
-      },
+      }
+    },
       "post": {
         "tags": ["contests"],
         "summary": "Create contest",
         "security": [{ "bearerAuth": [] }],
         "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
                 "required": ["name", "startsAt", "endsAt", "initialBalanceCents"],
-                "properties": {
+                  "properties": {
                   "name": { "type": "string" },
                   "slug": { "type": "string" },
                   "description": { "type": "string" },

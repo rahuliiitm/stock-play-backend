@@ -11,7 +11,7 @@ export class JwtAuthGuard implements CanActivate {
     const token = auth?.startsWith('Bearer ') ? auth.slice(7) : undefined
     if (!token) throw new UnauthorizedException('Missing token')
     try {
-      const payload = this.jwt.verify(token, { secret: process.env.JWT_SECRET || 'devsecret' })
+      const payload = this.jwt.verify(token) // Use the centrally configured secret
       req.user = payload
       return true
     } catch (e) {
