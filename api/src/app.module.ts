@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common'
 import { ConfigModule, ConfigService } from '@nestjs/config'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { EventEmitterModule } from '@nestjs/event-emitter'
+import { ScheduleModule } from '@nestjs/schedule'
 import { AppController } from './app.controller'
 import { AppService } from './app.service'
 import { HealthModule } from './health/health.module'
@@ -19,13 +20,16 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler'
 import { APP_GUARD } from '@nestjs/core'
 import { ScoringModule } from './modules/scoring/scoring.module'
 import { PortfolioModule } from './modules/portfolio/portfolio.module'
+import { AnalyticsModule } from './modules/analytics/analytics.module'
 import { CoreJwtModule } from './modules/common/jwt.module'
+import { EngagementModule } from './modules/engagement/engagement.module'
 
 @Module({
 	imports: [
 		ConfigModule.forRoot({ isGlobal: true, envFilePath: ['.env', '.env.development'] }),
 		ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
 		EventEmitterModule.forRoot(),
+		ScheduleModule.forRoot(),
 		TypeOrmModule.forRootAsync({
 			inject: [ConfigService],
 			useFactory: (config: ConfigService) => ({
@@ -50,6 +54,8 @@ import { CoreJwtModule } from './modules/common/jwt.module'
 		TasksModule,
 		ScoringModule,
 		PortfolioModule,
+		AnalyticsModule,
+		EngagementModule,
 		CoreJwtModule,
 	],
 	controllers: [AppController],

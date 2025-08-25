@@ -7,6 +7,7 @@ import { Portfolio } from '../../entities/Portfolio.entity'
 import { Position } from '../../entities/Position.entity'
 import { ContestParticipant } from '../../entities/ContestParticipant.entity'
 import { PortfolioTransaction } from '../../entities/PortfolioTransaction.entity'
+import { EngagementService } from '../engagement/engagement.service'
 
 @Injectable()
 export class PortfolioService {
@@ -19,6 +20,7 @@ export class PortfolioService {
     @InjectRepository(ContestParticipant) private readonly participants: Repository<ContestParticipant>,
     @InjectRepository(PortfolioTransaction) private readonly transactions: Repository<PortfolioTransaction>,
     private readonly quotes: QuotesService,
+    private readonly engagement: EngagementService,
   ) {}
 
   private async getParticipantPortfolio(userId: string, contestId: string): Promise<{ participant: ContestParticipant; portfolio: Portfolio }> {
@@ -98,6 +100,7 @@ export class PortfolioService {
     participant.current_cash_amount -= notional
     await this.participants.save(participant)
 
+    this.engagement.emitUpdate(portfolio.id, { type: 'BUY', symbol, quantity })
     return { ok: true }
   }
 
@@ -124,6 +127,7 @@ export class PortfolioService {
 
     await this.positions.delete({ id: position.id })
 
+    this.engagement.emitUpdate(portfolio.id, { type: 'SELL', symbol, quantity })
     return { ok: true }
   }
 
@@ -153,6 +157,7 @@ export class PortfolioService {
         await this.positions.save(position)
         await this.transactions.save(this.transactions.create({ portfolio_id: portfolio.id, symbol: u.symbol, quantity_delta: String(delta), price_amount: priceAmount, value_amount: notional, type: 'BUY' }))
         participant.current_cash_amount -= notional
+        this.engagement.emitUpdate(portfolio.id, { type: 'BUY', symbol: u.symbol, quantity: delta })
       } else {
         const sellQty = -delta
         if (position) {
@@ -165,6 +170,7 @@ export class PortfolioService {
           }
           await this.transactions.save(this.transactions.create({ portfolio_id: portfolio.id, symbol: u.symbol, quantity_delta: String(-sellQty), price_amount: priceAmount, value_amount: proceeds, type: 'SELL' }))
           participant.current_cash_amount += proceeds
+          this.engagement.emitUpdate(portfolio.id, { type: 'SELL', symbol: u.symbol, quantity: sellQty })
         }
       }
     }
