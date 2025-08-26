@@ -1,52 +1,66 @@
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
-import { ContestParticipant } from '../../entities/ContestParticipant.entity'
-import { Portfolio } from '../../entities/Portfolio.entity'
-import { Position } from '../../entities/Position.entity'
 import { User } from '../../entities/User.entity'
+import { PortfolioV2 } from '../../entities/PortfolioV2.entity'
+import { Holding } from '../../entities/Holding.entity'
+import { LeaderboardEntry, LeaderboardWindow } from '../../entities/LeaderboardEntry.entity'
 import { QuotesService } from '../stocks/quotes.service'
-import { LeaderboardSnapshot } from '../../entities/LeaderboardSnapshot.entity'
 
 @Injectable()
 export class LeaderboardService {
   constructor(
-    @InjectRepository(ContestParticipant) private readonly participants: Repository<ContestParticipant>,
-    @InjectRepository(Portfolio) private readonly portfolios: Repository<Portfolio>,
-    @InjectRepository(Position) private readonly positions: Repository<Position>,
     @InjectRepository(User) private readonly users: Repository<User>,
+    @InjectRepository(PortfolioV2) private readonly portfolios: Repository<PortfolioV2>,
+    @InjectRepository(Holding) private readonly holdings: Repository<Holding>,
+    @InjectRepository(LeaderboardEntry) private readonly entries: Repository<LeaderboardEntry>,
     private readonly quotes: QuotesService,
-    @InjectRepository(LeaderboardSnapshot) private readonly snapshots: Repository<LeaderboardSnapshot>,
   ) {}
 
-  async contestLeaderboard(contestId: string) {
-    const parts = await this.participants.find({ where: { contest_id: contestId } })
-    const results = [] as Array<{ userId: string; displayName: string; portfolioValueCents: number; rank: number }>
-    for (const p of parts) {
-      const portfolio = await this.portfolios.findOne({ where: { participant_id: p.id } })
-      const pos = await this.positions.find({ where: { portfolio_id: portfolio!.id } })
-      let positionsValue = 0
-      for (const x of pos) {
-        const q = await this.quotes.getQuote(x.symbol)
-        positionsValue += Math.round(q.priceCents * parseFloat(x.quantity))
-      }
-      const value = p.current_cash_amount + positionsValue
-      const user = await this.users.findOne({ where: { id: p.user_id } })
-      results.push({ userId: p.user_id, displayName: user?.display_name ?? user?.email ?? 'user', portfolioValueCents: value, rank: 0 })
-    }
-    results.sort((a, b) => b.portfolioValueCents - a.portfolioValueCents)
-    results.forEach((r, i) => (r.rank = i + 1))
-    return results
+  async getLeaderboard(window: LeaderboardWindow = 'ALL') {
+    const entries = await this.entries.find({ 
+      where: { window },
+      order: { return_percent: 'DESC', created_at: 'ASC' },
+      take: 100,
+      relations: ['portfolio', 'portfolio.user']
+    })
+    
+    return entries.map((entry, index) => ({
+      rank: index + 1,
+      portfolioId: entry.portfolio_id,
+      userId: entry.portfolio.user_id,
+      displayName: entry.portfolio.user.display_name || entry.portfolio.user.email,
+      returnPercent: entry.return_percent,
+      createdAt: entry.created_at
+    }))
   }
 
-  async snapshotContest(contestId: string) {
-    const rankings = await this.contestLeaderboard(contestId)
-    const snap = this.snapshots.create({ contest_id: contestId, as_of: new Date(), rankings })
-    await this.snapshots.save(snap)
-    return snap
+  async updatePortfolioRank(portfolioId: string, returnPercent: number) {
+    const portfolio = await this.portfolios.findOne({ 
+      where: { id: portfolioId },
+      relations: ['holdings']
+    })
+    
+    if (!portfolio) return
+
+    // Calculate total market value
+    let totalValueCents = 0
+    for (const holding of portfolio.holdings) {
+      totalValueCents += holding.current_value_cents || 0
+    }
+
+    // Update or create leaderboard entry
+    await this.entries.save(
+      this.entries.create({
+        portfolio_id: portfolioId,
+        window: 'ALL',
+        return_percent: returnPercent,
+        rank: 0, // Will be calculated by the ranking logic
+      })
+    )
   }
 
   async globalLeaderboard() {
-    return []
+    return this.getLeaderboard('ALL')
   }
 } 

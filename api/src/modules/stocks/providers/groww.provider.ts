@@ -18,10 +18,8 @@ export class GrowwProvider implements QuotesProvider {
       httpGet,
       getAccessToken: async () => this.auth.getAccessToken().catch(() => null),
       baseUrl: this.baseUrl(),
-      exchange: this.exchange(),
-      segment: this.segment(),
-      quotePath: this.quotePath(),
-      historyPath: this.historyPath(),
+      apiKey: process.env.GROWW_API_KEY,
+      appId: process.env.GROWW_APP_ID,
     })
   }
 

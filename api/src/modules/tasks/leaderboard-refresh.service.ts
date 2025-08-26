@@ -2,43 +2,50 @@ import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Cron, CronExpression } from '@nestjs/schedule'
 import { Repository } from 'typeorm'
-import { Contest } from '../../entities/Contest.entity'
-import { ContestParticipant } from '../../entities/ContestParticipant.entity'
-import { ScoringService } from '../scoring/scoring.service'
+import { PortfolioV2 } from '../../entities/PortfolioV2.entity'
 import { LeaderboardService } from '../leaderboard/leaderboard.service'
+import { PortfolioValueUpdateService } from '../portfolio/portfolio-value-update.service'
 
 @Injectable()
 export class LeaderboardRefreshService {
   constructor(
-    @InjectRepository(Contest) private readonly contests: Repository<Contest>,
-    @InjectRepository(ContestParticipant) private readonly participants: Repository<ContestParticipant>,
-    private readonly scoring: ScoringService,
+    @InjectRepository(PortfolioV2) private readonly portfolios: Repository<PortfolioV2>,
     private readonly leaderboard: LeaderboardService,
+    private readonly portfolioValueUpdate: PortfolioValueUpdateService,
   ) {}
 
-  @Cron(CronExpression.EVERY_MINUTE)
-  async refreshActive() {
-    const active = await this.contests.find({ where: { status: 'active' as any } })
-    for (const c of active) {
-      await this.refreshContestLeaderboard(c.id)
-    }
-  }
-
-  async refreshContestLeaderboard(contestId: string) {
-    await this.leaderboard.snapshotContest(contestId)
-    return true
-  }
-
   @Cron(CronExpression.EVERY_5_MINUTES)
-  async scoreEndedContests() {
-    const ended = await this.contests.find({ where: { status: 'ended' as any } })
-    for (const c of ended) {
+  async refreshGlobalLeaderboard() {
+    // First update portfolio values with current stock prices
+    await this.portfolioValueUpdate.updatePublicPortfolioValues()
+    
+    // Then update leaderboard rankings
+    const publicPortfolios = await this.portfolios.find({ 
+      where: { visibility: 'public' },
+      relations: ['holdings']
+    })
+    
+    for (const portfolio of publicPortfolios) {
       try {
-        await this.scoring.run(c.id, { calculator: 'gap_up_down', scoringMethod: 'exact_match', rankingMethod: 'highest_score' })
-        await this.leaderboard.snapshotContest(c.id)
-      } catch {
+        // Calculate current return percentage
+        let totalValueCents = 0
+        for (const holding of portfolio.holdings) {
+          totalValueCents += holding.current_value_cents || 0
+        }
+        
+        const initialValueCents = portfolio.initial_value_cents || 0
+        const returnPercent = initialValueCents > 0 ? ((totalValueCents - initialValueCents) / initialValueCents) * 100 : 0
+        
+        await this.leaderboard.updatePortfolioRank(portfolio.id, returnPercent)
+      } catch (error) {
         // ignore errors, will retry next run
+        console.error(`Failed to update portfolio ${portfolio.id}:`, error)
       }
     }
+  }
+
+  @Cron(CronExpression.EVERY_HOUR)
+  async updateAllPortfolioValues() {
+    await this.portfolioValueUpdate.updateAllPortfolioValues()
   }
 } 

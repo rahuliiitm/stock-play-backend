@@ -1,7 +1,7 @@
-# StockPlay Backend Technical Specification (v0.8)
+# StockPlay Backend Technical Specification (v1.0)
 
 ## 1. Overview
-StockPlay is a stocks prediction and virtual trading contest platform. Users join time-bound contests, receive a virtual balance, place simulated trades on supported equities within the contest window, and compete on leaderboards based on portfolio value. This specification defines backend architecture, data model, APIs, integrations, and non-functional requirements to implement the platform using NestJS, PostgreSQL, and Redis.
+StockPlay is a portfolio management and tracking platform. Users can create and manage stock portfolios (manual or connected to broker APIs like Groww), track returns, and participate in a global leaderboard. This specification defines backend architecture, data model, APIs, integrations, and non-functional requirements to implement the platform using NestJS, PostgreSQL, and Redis.
 
 - Primary stack: NestJS (TypeScript), PostgreSQL (RDS-ready), Redis (ElastiCache-ready)
 - ORM: TypeORM
@@ -10,20 +10,20 @@ StockPlay is a stocks prediction and virtual trading contest platform. Users joi
 - Auth: JWT (access + refresh), Argon2 password hashing
 - Observability: pino/winston logging, OpenTelemetry tracing compatible
 - Deployment: Docker + docker-compose for local; CI/CD pipelines; containerized services
-- Default currency: INR; support for rupee-based contest balances and fees
+- Default currency: INR; support for rupee-based portfolio values
 
 ## 2. Functional Requirements
 - Authentication: email/password auth with JWT access + refresh tokens; roles: user, admin
 - User Profile: display name, avatar, basic settings
-- Contests: create, schedule, activate, end; public/private; entry fee (optional); initial balance; allowed instruments; validation rules
-- Participation: join contest (enforce capacity, fee, timing); one active portfolio per participant per contest
-- Trading: market buy/sell simulated fills at provider quote; enforce trading windows (market hours + contest window); limits (max position per symbol, daily trade limit)
-- Portfolio: cash balance, open positions, realized/unrealized PnL; mark-to-market via latest cached quote
-- Leaderboard: rank participants by portfolio value; tie-breakers: higher cash, then earlier join time
-- Stock Data: search symbols, get live quote, get historical candles; cache quotes; persist trade-time price snapshot for auditability
-- Payments: Stripe/Razorpay for entry fees and payouts; webhook processing; refunds (for India, evaluate Razorpay or Cashfree)
-- Notifications: transactional email (contest start/end, rank changes, payout notices) via SendGrid/Postmark
-- Admin: user suspension, contest moderation, system flags
+- Portfolio Management: create, update, delete portfolios; add/remove stocks; track holdings and transactions
+- Broker Integration: connect to Groww API for automatic portfolio sync; TOTP-based authentication
+- Portfolio Tracking: real-time valuation, PnL calculation, return percentage tracking
+- Leaderboard: global ranking of portfolios by return percentage; public portfolio viewing
+- Stock Data: search symbols, get live quote, get historical candles; cache quotes via market-data-sdk
+- Market Data SDK: reusable library for fetching, parsing, and normalizing market data from multiple sources
+- Payments: Stripe/Razorpay for premium subscriptions (future)
+- Notifications: transactional email for portfolio updates, performance alerts
+- Admin: user suspension, portfolio moderation, system flags
 
 ## 3. Non-Functional Requirements
 - Performance: p95 < 200ms for cached reads; p95 < 400ms for write operations
@@ -31,49 +31,49 @@ StockPlay is a stocks prediction and virtual trading contest platform. Users joi
 - Scalability: horizontal scaling via stateless NestJS pods; Redis/Postgres managed services
 - Security: OWASP ASVS-aligned; TLS everywhere; at-rest encryption for DB backups; secrets in vault
 - Compliance: GDPR-ready deletion, audit logging for critical actions; India-compliant payment flows and data residency where applicable
-- Observability: structured logs, metrics (API latency, error rates), traces; audit logs for trades/payments
+- Observability: structured logs, metrics (API latency, error rates), traces; audit logs for portfolio changes
 
 ## 4. System Architecture
 - API Gateway: Next.js (UI) calls NestJS REST API
 - Services (NestJS modules):
   - `AuthModule`: local strategy, JWT issuance/refresh, password reset
   - `UsersModule`: profiles, admin controls
-  - `ContestsModule`: CRUD, scheduling state machine (draft → scheduled → active → ended/cancelled)
-  - `ParticipationModule`: joining, participant state
-  - `PortfolioModule`: cash, positions, valuation
-  - `TradesModule`: order intake, validation, execution (simulated fills)
-  - `StocksModule`: symbol search, quotes, history; providers abstraction
+  - `PortfolioModule`: portfolio CRUD, holdings management, valuation
+  - `StocksModule`: symbol search, quotes, history; market-data-sdk integration
   - `LeaderboardModule`: ranking computation + caching
-  - `PaymentsModule`: Stripe/Razorpay integration + webhooks
+  - `BrokerModule`: Groww API integration, TOTP authentication
+  - `PaymentsModule`: Stripe/Razorpay integration + webhooks (future)
   - `NotificationsModule`: email templates and sending
   - `CacheModule`: Redis clients, rate limiting
   - `TasksModule`: BullMQ queues, scheduled jobs (cron)
 
 - External Integrations:
-  - Stock data provider: Polygon.io / Finnhub / Alpha Vantage (configurable) via provider adapter interface
+  - Market Data SDK: reusable library with Groww, NSE, BSE providers
+  - Broker APIs: Groww API for portfolio sync and holdings
   - Payments: Stripe globally; for India, Razorpay/Cashfree adapter via same interface
   - Email: SendGrid/Postmark via provider adapter
 
 - Background Jobs:
-  - Contest lifecycle ticks (activate/end)
-  - Leaderboard recalculation (e.g., every 30–60s during market hours)
+  - Portfolio snapshot creation (daily)
+  - Leaderboard recalculation (every 5 minutes for public portfolios)
   - Quotes refresh for active symbols (throttled; provider rate limits)
-  - Payment reconciliation (Stripe/Razorpay events)
+  - Broker portfolio sync (scheduled)
 
 ## 5. Data Model (PostgreSQL)
 
 ### 5.1 Entity Overview
 - `users` (account + auth)
 - `refresh_tokens` (optional, for refresh-token rotation)
-- `contests` (contest definition)
-- `contest_participants` (link user ↔ contest)
-- `portfolios` (1 per participant)
-- `positions` (per portfolio × symbol)
-- `trades` (executions with price snapshots)
+- `portfolios_v2` (portfolio definition)
+- `holdings` (per portfolio × symbol)
+- `portfolio_transactions_v2` (buy/sell transactions)
+- `portfolio_snapshots_v2` (daily portfolio snapshots)
+- `leaderboard_entries` (portfolio rankings)
+- `broker_accounts` (connected broker accounts)
+- `broker_tokens` (broker API tokens)
 - `stock_symbols` (reference universe)
-- `price_snapshots` (quote at trade time + optional periodic)
-- `leaderboard_snapshots` (periodic aggregated standings)
-- `payments` (entry fees, payouts, refunds)
+- `stock_price_history` (historical price data)
+- `payments` (subscription fees, future)
 - `audit_logs` (administrative and sensitive actions)
 
 ### 5.2 Tables and Columns
@@ -97,139 +97,144 @@ refresh_tokens
 - revoked_at: timestamptz null
 - created_at: timestamptz default now()
 
-contests
+portfolios_v2
 - id: uuid pk
-- slug: varchar(80) unique not null
-- name: varchar(140) not null
-- description: text
-- visibility: public|private default 'public'
-- entry_fee_cents: int default 0
-- currency: char(3) default 'INR'
-- initial_balance_cents: int not null
-- max_participants: int null
-- starts_at: timestamptz not null
-- ends_at: timestamptz not null
-- status: draft|scheduled|active|ended|cancelled default 'draft'
-- created_by_user_id: uuid fk → users(id)
-- allowed_symbols: jsonb null (array of strings)
-- trading_constraints: jsonb null
+- user_id: uuid fk → users(id)
+- name: varchar(120) not null
+- visibility: public|unlisted|private default 'private'
+- initial_value_cents: decimal(18,2) default 0
 - created_at: timestamptz default now()
 - updated_at: timestamptz default now()
 
-contest_participants
+holdings
 - id: uuid pk
-- contest_id: uuid fk → contests(id)
-- user_id: uuid fk → users(id)
-- joined_at: timestamptz default now()
-- paid_entry_fee: bool default false
-- starting_balance_cents: int not null
-- current_cash_cents: int not null
-- last_value_cents: int default 0
-- rank: int null
-- UNIQUE(contest_id, user_id)
-
-portfolios
-- id: uuid pk
-- participant_id: uuid fk → contest_participants(id) unique
-- last_mark_to_market_cents: int default 0
+- portfolio_id: uuid fk → portfolios_v2(id)
+- symbol: varchar(20) not null
+- exchange: varchar(10) not null
+- quantity: varchar(20) not null
+- avg_price_cents: decimal(18,2) not null
+- current_value_cents: decimal(18,2) default 0
+- created_at: timestamptz default now()
 - updated_at: timestamptz default now()
 
-positions
+portfolio_transactions_v2
 - id: uuid pk
-- portfolio_id: uuid fk → portfolios(id)
-- symbol: varchar(16) not null
-- quantity: numeric(18,4) not null
-- avg_cost_cents: int not null
-- open_value_cents: int not null
-- current_value_cents: int default 0
-- UNIQUE(portfolio_id, symbol)
+- portfolio_id: uuid fk → portfolios_v2(id)
+- symbol: varchar(20) not null
+- exchange: varchar(10) not null
+- quantity_delta: varchar(20) not null
+- price_cents: decimal(18,2) not null
+- fees_cents: decimal(18,2) default 0
+- type: buy|sell not null
+- created_at: timestamptz default now()
 
-trades
+portfolio_snapshots_v2
 - id: uuid pk
-- portfolio_id: uuid fk → portfolios(id)
-- contest_id: uuid fk → contests(id)
+- portfolio_id: uuid fk → portfolios_v2(id)
+- date: date not null
+- market_value_cents: decimal(18,2) not null
+- return_percent: decimal(8,4) not null
+- created_at: timestamptz default now()
+
+leaderboard_entries
+- id: uuid pk
+- portfolio_id: uuid fk → portfolios_v2(id)
+- window: daily|weekly|monthly|all default 'all'
+- rank: int not null
+- return_percent: decimal(8,4) not null
+- created_at: timestamptz default now()
+- updated_at: timestamptz default now()
+
+broker_accounts
+- id: uuid pk
 - user_id: uuid fk → users(id)
-- symbol: varchar(16) not null
-- side: BUY|SELL not null
-- quantity: numeric(18,4) not null
-- price_cents: int not null
-- notional_cents: int not null
-- executed_at: timestamptz not null
-- quote_source: varchar(32) not null
-- provider_payload: jsonb null
+- broker: groww|zerodha|upstox not null
+- account_id: varchar(100) not null
+- account_name: varchar(200)
+- status: active|inactive default 'active'
+- created_at: timestamptz default now()
+- updated_at: timestamptz default now()
+
+broker_tokens
+- id: uuid pk
+- broker_account_id: uuid fk → broker_accounts(id)
+- token_type: access|refresh not null
+- token_value: text not null
+- expires_at: timestamptz
 - created_at: timestamptz default now()
 
 stock_symbols
-- symbol: varchar(16) pk
-- name: text
-- exchange: varchar(16)
-- status: active|inactive default 'active'
+- id: uuid pk
+- symbol: varchar(20) unique not null
+- exchange: nse|bse not null
+- name: varchar(200)
+- isin: varchar(12)
+- sector: varchar(100)
 - created_at: timestamptz default now()
 
-price_snapshots
+stock_price_history
 - id: uuid pk
-- symbol: varchar(16) not null
-- price_cents: int not null
+- symbol: varchar(20) not null
 - as_of: timestamptz not null
-- source: varchar(32) not null
-- provider_payload: jsonb null
-- UNIQUE(symbol, as_of, source)
-
-leaderboard_snapshots
-- id: uuid pk
-- contest_id: uuid fk → contests(id)
-- as_of: timestamptz not null
-- rankings: jsonb not null  -- array of {userId, portfolioValueCents, rank}
+- ltp: decimal(10,2) not null
+- volume: bigint
 - created_at: timestamptz default now()
 
 payments
 - id: uuid pk
 - user_id: uuid fk → users(id)
-- contest_id: uuid fk → contests(id)
-- type: entry_fee|payout|refund not null
-- amount_cents: int not null
-- currency: char(3) default 'USD'
-- status: initiated|succeeded|failed|refunded not null
-- stripe_payment_intent_id: varchar(128) null
-- stripe_charge_id: varchar(128) null
+- amount: decimal(18,2) not null
+- currency: varchar(3) default 'INR'
+- status: pending|completed|failed|refunded
+- provider: stripe|razorpay
+- provider_payment_id: varchar(200)
 - created_at: timestamptz default now()
 - updated_at: timestamptz default now()
 
 audit_logs
 - id: uuid pk
-- actor_user_id: uuid fk → users(id) null
-- action: varchar(64) not null  -- e.g., USER_SUSPEND, CONTEST_CREATE
-- subject_type: varchar(64) not null
-- subject_id: varchar(64) not null
-- metadata: jsonb null
+- user_id: uuid fk → users(id) null
+- action: varchar(100) not null
+- resource_type: varchar(50) not null
+- resource_id: uuid not null
+- details: jsonb
+- ip_address: inet
+- user_agent: text
 - created_at: timestamptz default now()
 
 ### 5.3 Indexes (non-exhaustive)
 - users(email)
-- contests(slug), contests(starts_at), contests(status)
-- contest_participants(contest_id), contest_participants(user_id)
-- positions(portfolio_id), positions(symbol)
-- trades(portfolio_id), trades(contest_id), trades(symbol), trades(executed_at)
-- price_snapshots(symbol, as_of)
-- payments(user_id), payments(contest_id), payments(status)
+- portfolios_v2(user_id), portfolios_v2(visibility)
+- holdings(portfolio_id), holdings(symbol)
+- portfolio_transactions_v2(portfolio_id), portfolio_transactions_v2(type)
+- portfolio_snapshots_v2(portfolio_id), portfolio_snapshots_v2(date)
+- leaderboard_entries(portfolio_id), leaderboard_entries(window)
+- broker_accounts(user_id), broker_accounts(broker)
+- broker_tokens(broker_account_id)
+- stock_symbols(symbol), stock_symbols(exchange)
+- stock_price_history(symbol, as_of)
+- payments(user_id), payments(status)
 
 ### 5.4 Constraints & Invariants
-- Contest time window must be valid (ends_at > starts_at, durations ≤ 90 days default)
-- Participant must have unique (contest_id, user_id)
-- Trading only allowed when contest.status = active and now() within [starts_at, ends_at] and market hours
-- Cannot sell more than held quantity (no shorting in MVP)
-- Position avg cost updates via VWAP formula on buy; selling reduces quantity and realizes PnL
+- Portfolio visibility must be valid (public, unlisted, private)
+- Holding quantity and price must be positive
+- Transaction fees must be non-negative
+- Portfolio return percentage is calculated daily
+- Leaderboard rankings are updated periodically
 
 ## 6. Business Logic
-- Join contest: verify status in [scheduled, active]; capacity; payment (if fee > 0) must be succeeded; create `contest_participants`, `portfolios`
-- Place trade: validate symbol allowed; rate limit per user; fetch or compute fill price (from cached quote within N seconds); check cash for BUY or holdings for SELL; update `positions`, `contest_participants.current_cash_cents`, write `trades` with snapshot
-- Leaderboard: compute portfolio value = cash + Σ(position.quantity × latest_price_cents); cache per contest; persist periodic snapshots
-- End contest: freeze trading; final mark-to-market; rank; trigger payouts for top N if configured
+- User registration/authentication
+- Portfolio creation and management
+- Stock/Holding management (buy/sell)
+- Real-time valuation and PnL calculation
+- Leaderboard participation and tracking
+- Broker API integration for portfolio sync
+- Payment processing (future)
 
 ## 7. Redis Usage
 - Keys:
   - `quotes:latest:{symbol}` → { priceCents, asOf }
-  - `leaderboard:contest:{contestId}` → array of {userId, valueCents, rank}
+  - `leaderboard:global` → array of {portfolioId, returnPercent, rank}
   - `ratelimit:user:{userId}:{route}` → counters with TTL
   - `session:refresh:{tokenId}` (optional)
 - TTLs: quotes 5–15s; leaderboards 15–60s
@@ -274,7 +279,7 @@ audit_logs
 ## 12. Testing Strategy
 - Unit tests for services and guards
 - Integration tests with testcontainers for Postgres/Redis
-- E2E tests for critical flows: signup/login, create contest, join, trade, leaderboard
+- E2E tests for critical flows: signup/login, create portfolio, manage holdings, leaderboard
 
 ## 13. Migration Plan
 - Initial schema migrations for all core tables
@@ -282,8 +287,8 @@ audit_logs
 - Backfills: none required for MVP
 
 ## 14. Open Questions / Future Enhancements
-- Options/crypto instruments
-- Social features: comments, follows
-- Advanced order types (limit/stop)
+- Advanced portfolio analytics (drawdowns, volatility)
+- Social features (comments, follows, portfolio sharing)
+- Advanced order types (limit/stop, OCO)
 - KYC/AML for real-money payouts
 - Multi-currency support

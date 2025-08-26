@@ -36,6 +36,6 @@ import { StocksController } from './stocks.controller'
     },
   ],
   controllers: [StocksController],
-  exports: [QuotesService, IndicatorsService, QUOTES_PROVIDER, SymbolsService],
+  exports: [QuotesService, IndicatorsService, QUOTES_PROVIDER, SymbolsService, GrowwAuthService],
 })
 export class StocksModule {} 

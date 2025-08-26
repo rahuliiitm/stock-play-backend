@@ -1,26 +1,78 @@
 import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
+import { ScheduleModule } from '@nestjs/schedule'
+import { HttpModule } from '@nestjs/axios'
 import { StockPriceHistory } from '../../entities/StockPriceHistory.entity'
-import { PortfolioService } from './portfolio.service'
-import { PortfolioController } from './portfolio.controller'
-import { Portfolio } from '../../entities/Portfolio.entity'
-import { Position } from '../../entities/Position.entity'
-import { ContestParticipant } from '../../entities/ContestParticipant.entity'
-import { Contest } from '../../entities/Contest.entity'
+import { PortfolioServiceV2 } from './portfolio-v2.service'
+import { HoldingsService } from './holdings.service'
+import { TransactionsService } from './transactions.service'
+import { ValuationService } from './valuation.service'
+import { PortfolioJobsService } from './portfolio-jobs.service'
+import { LeaderboardService } from './leaderboard.service'
+import { SearchService } from './search.service'
+import { BrokerService } from './broker.service'
+import { PortfolioV2Controller } from './portfolio-v2.controller'
+import { PublicController } from './public.controller'
+import { BrokerController } from './broker.controller'
 import { StocksModule } from '../stocks/stocks.module'
+import { GrowwAuthService } from '../stocks/providers/groww-auth.service'
 import { JwtModule } from '@nestjs/jwt'
-import { PortfolioTransaction } from '../../entities/PortfolioTransaction.entity'
 import { EngagementModule } from '../engagement/engagement.module'
+import { PortfolioV2 } from '../../entities/PortfolioV2.entity'
+import { Holding } from '../../entities/Holding.entity'
+import { PortfolioTransactionV2 } from '../../entities/PortfolioTransactionV2.entity'
+import { PortfolioSnapshotV2 } from '../../entities/PortfolioSnapshotV2.entity'
+import { LeaderboardEntry } from '../../entities/LeaderboardEntry.entity'
+import { BrokerAccount } from '../../entities/BrokerAccount.entity'
+import { BrokerToken } from '../../entities/BrokerToken.entity'
+import { User } from '../../entities/User.entity'
+import { PortfolioEventsService } from './events/portfolio-events.service'
+import { PortfolioValueUpdateService } from './portfolio-value-update.service'
 
 @Module({
   imports: [
+    HttpModule,
     JwtModule.register({}),
     StocksModule,
     EngagementModule,
-    TypeOrmModule.forFeature([StockPriceHistory, Portfolio, Position, ContestParticipant, Contest, PortfolioTransaction]),
+    ScheduleModule.forRoot(),
+    TypeOrmModule.forFeature([
+      StockPriceHistory,
+      PortfolioV2,
+      Holding,
+      PortfolioTransactionV2,
+      PortfolioSnapshotV2,
+      LeaderboardEntry,
+      BrokerAccount,
+      BrokerToken,
+      User,
+    ]),
   ],
-  providers: [PortfolioService],
-  controllers: [PortfolioController],
-  exports: [PortfolioService],
+  providers: [
+    PortfolioServiceV2,
+    HoldingsService,
+    TransactionsService,
+    ValuationService,
+    PortfolioJobsService,
+    LeaderboardService,
+    SearchService,
+    BrokerService,
+    GrowwAuthService,
+    PortfolioEventsService,
+    PortfolioValueUpdateService,
+  ],
+  controllers: [PortfolioV2Controller, PublicController, BrokerController],
+  exports: [
+    PortfolioServiceV2,
+    HoldingsService,
+    TransactionsService,
+    ValuationService,
+    PortfolioJobsService,
+    LeaderboardService,
+    SearchService,
+    BrokerService,
+    PortfolioEventsService,
+    PortfolioValueUpdateService,
+  ],
 })
-export class PortfolioModule {} 
+export class PortfolioModule {}

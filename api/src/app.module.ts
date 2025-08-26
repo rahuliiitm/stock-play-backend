@@ -8,17 +8,13 @@ import { AppService } from './app.service'
 import { HealthModule } from './health/health.module'
 import { UsersModule } from './modules/users/users.module'
 import { AuthModule } from './modules/auth/auth.module'
-import { ContestsModule } from './modules/contests/contests.module'
-import { ParticipationModule } from './modules/participation/participation.module'
 import { StocksModule } from './modules/stocks/stocks.module'
-import { TradesModule } from './modules/trades/trades.module'
 import { LeaderboardModule } from './modules/leaderboard/leaderboard.module'
 import { PaymentsModule } from './modules/payments/payments.module'
 import { WebhooksModule } from './modules/webhooks/webhooks.module'
 import { TasksModule } from './modules/tasks/tasks.module'
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler'
 import { APP_GUARD } from '@nestjs/core'
-import { ScoringModule } from './modules/scoring/scoring.module'
 import { PortfolioModule } from './modules/portfolio/portfolio.module'
 import { AnalyticsModule } from './modules/analytics/analytics.module'
 import { CoreJwtModule } from './modules/common/jwt.module'
@@ -44,15 +40,11 @@ import { EngagementModule } from './modules/engagement/engagement.module'
 		HealthModule,
 		UsersModule,
 		AuthModule,
-		ContestsModule,
-		ParticipationModule,
 		StocksModule,
-		TradesModule,
 		LeaderboardModule,
 		PaymentsModule,
 		WebhooksModule,
 		TasksModule,
-		ScoringModule,
 		PortfolioModule,
 		AnalyticsModule,
 		EngagementModule,
