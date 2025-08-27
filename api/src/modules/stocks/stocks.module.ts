@@ -13,6 +13,7 @@ import { SymbolsService } from './symbols.service'
 import { StockSymbol } from '../../entities/StockSymbol.entity'
 import { QuotesService } from './quotes.service'
 import { StocksController } from './stocks.controller'
+import { StockQuoteCacheService } from './stock-quote-cache.service'
 
 @Module({
   imports: [HttpModule, JwtModule.register({}), TypeOrmModule.forFeature([StockSymbol])],
@@ -34,8 +35,9 @@ import { StocksController } from './stocks.controller'
       },
       inject: [GrowwProvider, NseProvider, PolygonProvider],
     },
+    StockQuoteCacheService,
   ],
   controllers: [StocksController],
-  exports: [QuotesService, IndicatorsService, QUOTES_PROVIDER, SymbolsService, GrowwAuthService],
+  exports: [QuotesService, IndicatorsService, QUOTES_PROVIDER, SymbolsService, GrowwAuthService, StockQuoteCacheService],
 })
 export class StocksModule {} 

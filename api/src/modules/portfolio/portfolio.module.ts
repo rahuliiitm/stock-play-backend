@@ -28,6 +28,7 @@ import { BrokerToken } from '../../entities/BrokerToken.entity'
 import { User } from '../../entities/User.entity'
 import { PortfolioEventsService } from './events/portfolio-events.service'
 import { PortfolioValueUpdateService } from './portfolio-value-update.service'
+import { StockQuoteCacheService } from '../stocks/stock-quote-cache.service'
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { PortfolioValueUpdateService } from './portfolio-value-update.service'
     GrowwAuthService,
     PortfolioEventsService,
     PortfolioValueUpdateService,
+    StockQuoteCacheService,
   ],
   controllers: [PortfolioV2Controller, PublicController, BrokerController],
   exports: [
@@ -73,6 +75,7 @@ import { PortfolioValueUpdateService } from './portfolio-value-update.service'
     BrokerService,
     PortfolioEventsService,
     PortfolioValueUpdateService,
+    StockQuoteCacheService,
   ],
 })
 export class PortfolioModule {}
