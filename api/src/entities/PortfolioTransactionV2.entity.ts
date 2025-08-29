@@ -22,10 +22,10 @@ export class PortfolioTransactionV2 {
   quantity_delta!: string | null
 
   @Column({ type: 'decimal', precision: 18, scale: 2, nullable: true })
-  price_cents!: number | null
+  price!: number | null
 
   @Column({ type: 'decimal', precision: 18, scale: 2, nullable: true })
-  fees_cents!: number | null
+  fees!: number | null
 
   @Column({ type: 'varchar', length: 16 })
   type!: TransactionType

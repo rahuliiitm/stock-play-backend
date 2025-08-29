@@ -94,8 +94,8 @@ export class LeaderboardService {
         'portfolio.name as portfolioName',
         'portfolio.user_id as userId',
         'portfolio.visibility as visibility',
-        'SUM(snapshot.pnl_cents) as totalPnlCents',
-        'SUM(snapshot.market_value_cents) as totalMarketValueCents',
+        'SUM(snapshot.pnl) as totalPnlCents',
+        'SUM(snapshot.market_value) as totalMarketValueCents',
         'AVG(snapshot.return_percent) as avgReturnPercent',
         'COUNT(snapshot.id) as snapshotCount',
       ])
@@ -130,8 +130,8 @@ export class LeaderboardService {
           return subQuery
             .select('portfolio_id', 'portfolio_id')
             .addSelect('AVG(return_percent)', 'avgReturn')
-            .addSelect('SUM(market_value_cents)', 'totalValue')
-            .addSelect('SUM(pnl_cents)', 'totalPnl')
+            .addSelect('SUM(market_value)', 'totalValue')
+            .addSelect('SUM(pnl)', 'totalPnl')
             .from('portfolio_snapshots_v2', 'snapshot')
             .where('snapshot.date >= :startDate')
             .andWhere('snapshot.date <= :endDate')
@@ -228,7 +228,7 @@ export class LeaderboardService {
         'snapshot.date as date',
         'entry.rank as rank',
         'snapshot.return_percent as returnPercent',
-        'snapshot.market_value_cents as marketValueCents',
+        'snapshot.market_value as marketValueCents',
       ])
       .setParameters({
         portfolioId,

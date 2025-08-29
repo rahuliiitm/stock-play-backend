@@ -71,20 +71,20 @@ export class PortfolioJobsService implements OnModuleInit {
       if (priceRow) {
         const currentPriceCents = Math.round(priceRow.ltp * 100)
         const currentValueCents = Math.round(currentPriceCents * parseFloat(holding.quantity))
-        holding.current_value_cents = currentValueCents
+        holding.current_value = currentValueCents
         await this.holdings.save(holding)
         totalValueCents += currentValueCents
       } else {
         // Fallback to live quote
         const quote = await this.quotes.getQuote(holding.symbol)
-        holding.current_value_cents = Math.round(quote.priceCents * parseFloat(holding.quantity))
+        holding.current_value = Math.round(quote.price * parseFloat(holding.quantity))
         await this.holdings.save(holding)
-        totalValueCents += holding.current_value_cents
+        totalValueCents += holding.current_value
       }
     }
 
     // Calculate return percentage
-    const initialValueCents = portfolio.initial_value_cents || 0
+    const initialValueCents = portfolio.initial_value || 0
     const returnPercent = initialValueCents > 0 ? ((totalValueCents - initialValueCents) / initialValueCents) * 100 : 0
 
     // Create snapshot
@@ -92,7 +92,7 @@ export class PortfolioJobsService implements OnModuleInit {
       this.snapshots.create({
         portfolio_id: data.portfolioId,
         date: asOf,
-        market_value_cents: totalValueCents,
+        market_value: totalValueCents,
         return_percent: returnPercent,
       })
     )

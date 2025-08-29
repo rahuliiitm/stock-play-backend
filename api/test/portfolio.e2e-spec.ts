@@ -119,7 +119,7 @@ describe('Portfolio Management (e2e)', () => {
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('symbol', 'RELIANCE');
-      expect(response.body).toHaveProperty('priceCents');
+      expect(response.body).toHaveProperty('price');
       expect(response.body).toHaveProperty('asOf');
     });
 

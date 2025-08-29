@@ -1,14 +1,14 @@
 export type Exchange = 'NSE' | 'BSE' | 'POLYGON' | string
 
 export interface Quote {
-	symbol: string
-	priceCents: number
-	asOf: string
-	source: string
-	openCents?: number
-	highCents?: number
-	lowCents?: number
-	prevCloseCents?: number
+  symbol: string
+  price: number
+  asOf: string
+  source: string
+  open?: number
+  high?: number
+  low?: number
+  prevClose?: number
 }
 
 export interface Candle {

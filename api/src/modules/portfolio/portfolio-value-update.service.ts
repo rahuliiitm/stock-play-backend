@@ -104,36 +104,36 @@ export class PortfolioValueUpdateService {
       const cachedQuote = cachedQuotes.get(holding.symbol)
       
       if (cachedQuote) {
-        const currentPriceCents = cachedQuote.priceCents
-        const currentValueCents = Math.round(currentPriceCents * parseFloat(holding.quantity))
+        const currentPrice = cachedQuote.price
+        const currentValue = Math.round(currentPrice * parseFloat(holding.quantity))
         
-        holding.current_value_cents = currentValueCents
+        holding.current_value = currentValue
         updatedHoldings.push(holding)
-        totalValueCents += currentValueCents
+        totalValueCents += currentValue
 
-        this.logger.debug(`Updated holding ${holding.symbol}: ${currentValueCents} cents (cached)`)
+        this.logger.debug(`Updated holding ${holding.symbol}: ₹${currentValue} (cached)`)
       } else {
         // Fallback to direct API call if not in cache
         try {
           const quote = await this.quoteCache.getQuote(holding.symbol)
           if (quote) {
-            const currentPriceCents = quote.priceCents
-            const currentValueCents = Math.round(currentPriceCents * parseFloat(holding.quantity))
+            const currentPrice = quote.price
+            const currentValue = Math.round(currentPrice * parseFloat(holding.quantity))
             
-            holding.current_value_cents = currentValueCents
+            holding.current_value = currentValue
             updatedHoldings.push(holding)
-            totalValueCents += currentValueCents
+            totalValueCents += currentValue
 
-            this.logger.debug(`Updated holding ${holding.symbol}: ${currentValueCents} cents (API)`)
+            this.logger.debug(`Updated holding ${holding.symbol}: ₹${currentValue} (API)`)
           } else {
             // Keep existing value if quote fetch fails
-            totalValueCents += holding.current_value_cents || 0
+            totalValueCents += holding.current_value || 0
             this.logger.warn(`No quote available for ${holding.symbol}, keeping existing value`)
           }
         } catch (error) {
           this.logger.warn(`Failed to get quote for ${holding.symbol}:`, error)
           // Keep existing value if quote fetch fails
-          totalValueCents += holding.current_value_cents || 0
+          totalValueCents += holding.current_value || 0
         }
       }
     }
@@ -144,11 +144,11 @@ export class PortfolioValueUpdateService {
     }
 
     // Calculate return percentage
-    const initialValueCents = portfolio.initial_value_cents || 0
-    const returnPercent = initialValueCents > 0 ? ((totalValueCents - initialValueCents) / initialValueCents) * 100 : 0
+    const initialValue = portfolio.initial_value || 0
+    const returnPercent = initialValue > 0 ? ((totalValueCents - initialValue) / initialValue) * 100 : 0
 
     // Update portfolio with new values
-    portfolio.initial_value_cents = initialValueCents
+    portfolio.initial_value = initialValue
     await this.portfolios.save(portfolio)
 
     // Invalidate cache

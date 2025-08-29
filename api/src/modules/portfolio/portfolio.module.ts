@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { ScheduleModule } from '@nestjs/schedule'
 import { HttpModule } from '@nestjs/axios'
+import { EventEmitterModule } from '@nestjs/event-emitter'
 import { StockPriceHistory } from '../../entities/StockPriceHistory.entity'
 import { PortfolioServiceV2 } from './portfolio-v2.service'
 import { HoldingsService } from './holdings.service'
@@ -34,6 +35,7 @@ import { StockQuoteCacheService } from '../stocks/stock-quote-cache.service'
   imports: [
     HttpModule,
     JwtModule.register({}),
+    EventEmitterModule.forRoot(),
     StocksModule,
     EngagementModule,
     ScheduleModule.forRoot(),

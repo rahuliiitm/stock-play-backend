@@ -1,5 +1,5 @@
 import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
-import { Portfolio } from './Portfolio.entity'
+import { PortfolioV2 } from './PortfolioV2.entity'
 import { User } from './User.entity'
 
 @Entity('portfolio_subscriptions')
@@ -17,9 +17,9 @@ export class PortfolioSubscription {
   @CreateDateColumn({ type: 'timestamptz' })
   created_at!: Date
 
-  @ManyToOne(() => Portfolio)
+  @ManyToOne(() => PortfolioV2)
   @JoinColumn({ name: 'portfolio_id' })
-  portfolio!: Portfolio
+  portfolio!: PortfolioV2
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'user_id' })

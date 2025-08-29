@@ -125,7 +125,7 @@ export class PortfolioJobsService {
 
           for (const holding of holdings) {
             const quantity = Number(holding.quantity)
-            const currentValueCents = Math.round(quote.priceCents * quantity)
+            const currentValueCents = Math.round(quote.price * quantity)
 
             await this.valuationService.invalidatePortfolioCache(holding.portfolio_id)
             updated++

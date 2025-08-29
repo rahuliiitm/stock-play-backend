@@ -244,11 +244,10 @@ export class IndicatorCalculationService {
   }
 
   /**
-   * Scheduled job to calculate all indicators
+   * Event listener for indicator calculations (replaces hourly scheduler)
    */
-  @Cron(CronExpression.EVERY_HOUR)
-  async scheduledIndicatorCalculation(): Promise<void> {
-    this.logger.log('Running scheduled indicator calculation')
+  async onIndicatorUpdateRequest(): Promise<void> {
+    this.logger.log('Received indicator calculation request via event')
     await this.calculateAllIndicators()
   }
 

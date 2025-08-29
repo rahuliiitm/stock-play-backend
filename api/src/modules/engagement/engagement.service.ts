@@ -4,7 +4,7 @@ import { Repository } from 'typeorm'
 import { PortfolioSubscription } from '../../entities/PortfolioSubscription.entity'
 import { PortfolioLike } from '../../entities/PortfolioLike.entity'
 import { PortfolioComment } from '../../entities/PortfolioComment.entity'
-import { Portfolio } from '../../entities/Portfolio.entity'
+import { PortfolioV2 } from '../../entities/PortfolioV2.entity'
 import { Subject } from 'rxjs'
 
 @Injectable()
@@ -13,7 +13,7 @@ export class EngagementService {
     @InjectRepository(PortfolioSubscription) private readonly subs: Repository<PortfolioSubscription>,
     @InjectRepository(PortfolioLike) private readonly likes: Repository<PortfolioLike>,
     @InjectRepository(PortfolioComment) private readonly comments: Repository<PortfolioComment>,
-    @InjectRepository(Portfolio) private readonly portfolios: Repository<Portfolio>,
+    @InjectRepository(PortfolioV2) private readonly portfolios: Repository<PortfolioV2>,
   ) {}
 
   private streams = new Map<string, Subject<any>>()

@@ -265,13 +265,13 @@ export class GrowwSource implements MarketDataSource {
 
 		return {
 			symbol,
-			priceCents: Math.round(Number(payload.last_price ?? payload.ltp ?? 0) * 100),
+			      price: Number(payload.last_price ?? payload.ltp ?? 0),
 			asOf: this.toIso(payload.last_trade_time || payload.lastTradeTime || payload.timestamp || Date.now()),
 			source: 'groww',
-			openCents: ohlc.open != null ? Math.round(Number(ohlc.open) * 100) : undefined,
-			highCents: ohlc.high != null ? Math.round(Number(ohlc.high) * 100) : undefined,
-			lowCents: ohlc.low != null ? Math.round(Number(ohlc.low) * 100) : undefined,
-			prevCloseCents: ohlc.close != null ? Math.round(Number(ohlc.close) * 100) : undefined,
+			open: ohlc.open != null ? Number(ohlc.open) : undefined,
+			high: ohlc.high != null ? Number(ohlc.high) : undefined,
+			low: ohlc.low != null ? Number(ohlc.low) : undefined,
+			prevClose: ohlc.close != null ? Number(ohlc.close) : undefined,
 		}
 	}
 

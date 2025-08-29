@@ -53,10 +53,10 @@ export class NseSource implements MarketDataSource {
       const ts = this.toIso(
         data?.timestamp ?? data?.lastTradeTime ?? data?.payload?.timestamp ?? Date.now(),
       )
-      return { symbol, priceCents: Math.round(last * 100), asOf: ts, source: 'nse' }
+      		return { symbol, price: last, asOf: ts, source: 'nse' }
     } catch {
       // Conservative fallback
-      return { symbol, priceCents: 0, asOf: new Date().toISOString(), source: 'nse' }
+      		return { symbol, price: 0, asOf: new Date().toISOString(), source: 'nse' }
     }
   }
 

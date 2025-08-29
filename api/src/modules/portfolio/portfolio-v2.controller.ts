@@ -46,8 +46,8 @@ class CreateTransactionDto {
   symbol?: string
   exchange?: 'NSE' | 'BSE'
   quantityDelta?: number
-  priceCents?: number
-  feesCents?: number
+  price?: number
+  fees?: number
   type!: TransactionType
 }
 
@@ -250,8 +250,8 @@ export class PortfolioV2Controller {
       dto.symbol || null,
       dto.exchange || null,
       dto.quantityDelta || null,
-      dto.priceCents || null,
-      dto.feesCents || null,
+      dto.price || null,
+      dto.fees || null,
       dto.type,
     )
 
@@ -261,8 +261,8 @@ export class PortfolioV2Controller {
       symbol: transaction.symbol,
       exchange: transaction.exchange,
       quantityDelta: transaction.quantity_delta ? Number(transaction.quantity_delta) : null,
-      priceCents: transaction.price_cents,
-      feesCents: transaction.fees_cents,
+      price: transaction.price,
+      fees: transaction.fees,
       type: transaction.type,
       createdAt: transaction.created_at,
     }

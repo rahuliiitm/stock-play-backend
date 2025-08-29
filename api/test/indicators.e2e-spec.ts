@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { config } from 'dotenv';
-import { IndicatorsModule } from '../src/modules/indicators/indicators.module';
+import { AppModule } from '../src/app.module';
 import { IndicatorProviderRegistryService } from '../src/modules/indicators/indicator-provider-registry.service';
 
 // Load environment variables
@@ -13,7 +13,7 @@ describe('Indicators System (e2e)', () => {
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [IndicatorsModule],
+      imports: [AppModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();

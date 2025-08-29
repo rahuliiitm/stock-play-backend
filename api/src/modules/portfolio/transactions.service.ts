@@ -11,8 +11,8 @@ export interface TransactionSummary {
   symbol: string | null
   exchange: 'NSE' | 'BSE' | null
   quantityDelta: number | null
-  priceCents: number | null
-  feesCents: number | null
+  price: number | null
+  fees: number | null
   type: TransactionType
   createdAt: Date
 }
@@ -42,8 +42,8 @@ export class TransactionsService {
     symbol: string | null,
     exchange: 'NSE' | 'BSE' | null,
     quantityDelta: number | null,
-    priceCents: number | null,
-    feesCents: number | null,
+    price: number | null,
+    fees: number | null,
     type: TransactionType,
   ): Promise<PortfolioTransactionV2> {
     const portfolio = await this.portfolios.findOne({ where: { id: portfolioId } })
@@ -56,8 +56,8 @@ export class TransactionsService {
       symbol,
       exchange,
       quantity_delta: quantityDelta ? String(quantityDelta) : null,
-      price_cents: priceCents,
-      fees_cents: feesCents,
+      price: price,
+      fees: fees,
       type,
     })
 
@@ -110,8 +110,8 @@ export class TransactionsService {
       symbol: t.symbol,
       exchange: t.exchange,
       quantityDelta: t.quantity_delta ? Number(t.quantity_delta) : null,
-      priceCents: t.price_cents,
-      feesCents: t.fees_cents,
+      price: t.price,
+      fees: t.fees,
       type: t.type,
       createdAt: t.created_at,
     }))
@@ -127,8 +127,8 @@ export class TransactionsService {
       symbol: transaction.symbol,
       exchange: transaction.exchange,
       quantityDelta: transaction.quantity_delta ? Number(transaction.quantity_delta) : null,
-      priceCents: transaction.price_cents,
-      feesCents: transaction.fees_cents,
+      price: transaction.price,
+      fees: transaction.fees,
       type: transaction.type,
       createdAt: transaction.created_at,
     }
@@ -148,8 +148,8 @@ export class TransactionsService {
       symbol: t.symbol,
       exchange: t.exchange,
       quantityDelta: t.quantity_delta ? Number(t.quantity_delta) : null,
-      priceCents: t.price_cents,
-      feesCents: t.fees_cents,
+      price: t.price,
+      fees: t.fees,
       type: t.type,
       createdAt: t.created_at,
     }))
@@ -176,7 +176,7 @@ export class TransactionsService {
         'SUM(CASE WHEN t.type = \'SELL\' THEN 1 ELSE 0 END) as sellTransactions',
         'SUM(CASE WHEN t.type = \'DEPOSIT\' THEN 1 ELSE 0 END) as depositTransactions',
         'SUM(CASE WHEN t.type = \'WITHDRAW\' THEN 1 ELSE 0 END) as withdrawTransactions',
-        'SUM(COALESCE(t.fees_cents, 0)) as totalFees',
+        'SUM(COALESCE(t.fees, 0)) as totalFees',
       ])
       .where('t.portfolio_id = :portfolioId', { portfolioId })
       .getRawOne()

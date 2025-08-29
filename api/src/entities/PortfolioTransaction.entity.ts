@@ -1,5 +1,5 @@
 import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
-import { Portfolio } from './Portfolio.entity'
+import { PortfolioV2 } from './PortfolioV2.entity'
 
 @Entity('portfolio_transactions')
 @Index(['portfolio_id', 'created_at'])
@@ -28,7 +28,7 @@ export class PortfolioTransaction {
   @CreateDateColumn({ type: 'timestamptz' })
   created_at!: Date
 
-  @ManyToOne(() => Portfolio)
+  @ManyToOne(() => PortfolioV2)
   @JoinColumn({ name: 'portfolio_id' })
-  portfolio!: Portfolio
+  portfolio!: PortfolioV2
 } 

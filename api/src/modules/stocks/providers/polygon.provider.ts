@@ -11,7 +11,7 @@ export class PolygonProvider implements QuotesProvider {
   }
 
   async getQuote(symbol: string): Promise<QuoteResult> {
-    return { symbol, priceCents: 10000, asOf: new Date().toISOString(), source: 'polygon' }
+    return { symbol, price: 100, asOf: new Date().toISOString(), source: 'polygon' }
   }
 
   async getHistory(symbol: string, _from?: string, _to?: string, _intervalMinutes?: number): Promise<CandleResult[]> {

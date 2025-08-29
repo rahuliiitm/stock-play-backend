@@ -11,12 +11,13 @@ import { PolygonProvider } from './providers/polygon.provider'
 import { GrowwAuthService } from './providers/groww-auth.service'
 import { SymbolsService } from './symbols.service'
 import { StockSymbol } from '../../entities/StockSymbol.entity'
+import { Holding } from '../../entities/Holding.entity'
 import { QuotesService } from './quotes.service'
 import { StocksController } from './stocks.controller'
 import { StockQuoteCacheService } from './stock-quote-cache.service'
 
 @Module({
-  imports: [HttpModule, JwtModule.register({}), TypeOrmModule.forFeature([StockSymbol])],
+  imports: [HttpModule, JwtModule.register({}), TypeOrmModule.forFeature([StockSymbol, Holding])],
   providers: [
     QuotesService,
     IndicatorsService,

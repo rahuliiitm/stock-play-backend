@@ -11,10 +11,10 @@ export interface HoldingSummary {
   symbol: string
   exchange: string
   quantity: number
-  avgCostCents: number
-  currentPriceCents: number
-  marketValueCents: number
-  pnlCents: number
+  avgCost: number
+  currentPrice: number
+  marketValue: number
+  pnl: number
   pnlPercent: number
 }
 
@@ -47,17 +47,17 @@ export class HoldingsService {
 
     for (const holding of holdings) {
       const quantity = Number(holding.quantity)
-      const avgCostCents = holding.avg_cost_cents
+      const avgCost = holding.avg_cost
 
       const cachedQuote = cachedQuotes.get(holding.symbol)
       
       if (cachedQuote) {
         // Use cached quote
-        const currentPriceCents = cachedQuote.priceCents
-        const marketValueCents = Math.round(currentPriceCents * quantity)
-        const investedCents = Math.round(avgCostCents * quantity)
-        const pnlCents = marketValueCents - investedCents
-        const pnlPercent = investedCents > 0 ? Number(((pnlCents / investedCents) * 100).toFixed(4)) : 0
+              const currentPrice = cachedQuote.price
+      const marketValue = Math.round(currentPrice * quantity)
+        const invested = Math.round(avgCost * quantity)
+        const pnl = marketValue - invested
+        const pnlPercent = invested > 0 ? Number(((pnl / invested) * 100).toFixed(4)) : 0
 
         summaries.push({
           id: holding.id,
@@ -65,10 +65,10 @@ export class HoldingsService {
           symbol: holding.symbol,
           exchange: holding.exchange,
           quantity,
-          avgCostCents,
-          currentPriceCents,
-          marketValueCents,
-          pnlCents,
+          avgCost,
+          currentPrice,
+          marketValue,
+          pnl,
           pnlPercent,
         })
       } else {
@@ -76,11 +76,11 @@ export class HoldingsService {
         try {
           const quote = await this.quoteCache.getQuote(holding.symbol)
           if (quote) {
-            const currentPriceCents = quote.priceCents
-            const marketValueCents = Math.round(currentPriceCents * quantity)
-            const investedCents = Math.round(avgCostCents * quantity)
-            const pnlCents = marketValueCents - investedCents
-            const pnlPercent = investedCents > 0 ? Number(((pnlCents / investedCents) * 100).toFixed(4)) : 0
+            const currentPrice = quote.price
+            const marketValue = Math.round(currentPrice * quantity)
+            const invested = Math.round(avgCost * quantity)
+            const pnl = marketValue - invested
+            const pnlPercent = invested > 0 ? Number(((pnl / invested) * 100).toFixed(4)) : 0
 
             summaries.push({
               id: holding.id,
@@ -88,18 +88,18 @@ export class HoldingsService {
               symbol: holding.symbol,
               exchange: holding.exchange,
               quantity,
-              avgCostCents,
-              currentPriceCents,
-              marketValueCents,
-              pnlCents,
+              avgCost,
+              currentPrice,
+              marketValue,
+              pnl,
               pnlPercent,
             })
           } else {
             // Use existing values if quote not available
-            const marketValueCents = holding.current_value_cents
-            const investedCents = Math.round(avgCostCents * quantity)
-            const pnlCents = marketValueCents - investedCents
-            const pnlPercent = investedCents > 0 ? Number(((pnlCents / investedCents) * 100).toFixed(4)) : 0
+            const marketValue = holding.current_value
+            const invested = Math.round(avgCost * quantity)
+            const pnl = marketValue - invested
+            const pnlPercent = invested > 0 ? Number(((pnl / invested) * 100).toFixed(4)) : 0
 
             summaries.push({
               id: holding.id,
@@ -107,20 +107,20 @@ export class HoldingsService {
               symbol: holding.symbol,
               exchange: holding.exchange,
               quantity,
-              avgCostCents,
-              currentPriceCents: holding.current_value_cents,
-              marketValueCents,
-              pnlCents,
+              avgCost,
+              currentPrice: holding.current_value,
+              marketValue,
+              pnl,
               pnlPercent,
             })
           }
         } catch (error) {
           this.logger.error(`Failed to get quote for ${holding.symbol}:`, error)
           // Return holding with last known values
-          const marketValueCents = holding.current_value_cents
-          const investedCents = Math.round(avgCostCents * quantity)
-          const pnlCents = marketValueCents - investedCents
-          const pnlPercent = investedCents > 0 ? Number(((pnlCents / investedCents) * 100).toFixed(4)) : 0
+          const marketValue = holding.current_value
+          const invested = Math.round(avgCost * quantity)
+          const pnl = marketValue - invested
+          const pnlPercent = invested > 0 ? Number(((pnl / invested) * 100).toFixed(4)) : 0
 
           summaries.push({
             id: holding.id,
@@ -128,10 +128,10 @@ export class HoldingsService {
             symbol: holding.symbol,
             exchange: holding.exchange,
             quantity,
-            avgCostCents,
-            currentPriceCents: holding.current_value_cents,
-            marketValueCents,
-            pnlCents,
+            avgCost,
+            currentPrice: holding.current_value,
+            marketValue,
+            pnl,
             pnlPercent,
           })
         }
@@ -146,16 +146,16 @@ export class HoldingsService {
     if (!holding) return null
 
     const quantity = Number(holding.quantity)
-    const avgCostCents = holding.avg_cost_cents
+    const avgCost = holding.avg_cost
 
     try {
       const quote = await this.quoteCache.getQuote(symbol)
       if (quote) {
-        const currentPriceCents = quote.priceCents
-        const marketValueCents = Math.round(currentPriceCents * quantity)
-        const investedCents = Math.round(avgCostCents * quantity)
-        const pnlCents = marketValueCents - investedCents
-        const pnlPercent = investedCents > 0 ? Number(((pnlCents / investedCents) * 100).toFixed(4)) : 0
+        const currentPrice = quote.price
+        const marketValue = Math.round(currentPrice * quantity)
+        const invested = Math.round(avgCost * quantity)
+        const pnl = marketValue - invested
+        const pnlPercent = invested > 0 ? Number(((pnl / invested) * 100).toFixed(4)) : 0
 
         return {
           id: holding.id,
@@ -163,10 +163,10 @@ export class HoldingsService {
           symbol: holding.symbol,
           exchange: holding.exchange,
           quantity,
-          avgCostCents,
-          currentPriceCents,
-          marketValueCents,
-          pnlCents,
+          avgCost,
+          currentPrice,
+          marketValue,
+          pnl,
           pnlPercent,
         }
       } else {
@@ -181,7 +181,7 @@ export class HoldingsService {
   async updateHoldingCurrentValue(portfolioId: string, symbol: string, currentValueCents: number): Promise<void> {
     await this.holdings.update(
       { portfolio_id: portfolioId, symbol },
-      { current_value_cents: currentValueCents }
+      { current_value: currentValueCents }
     )
   }
 
@@ -202,8 +202,8 @@ export class HoldingsService {
       portfolio_id: portfolioId,
       symbol,
       quantity: String(quantity),
-      avg_cost_cents: avgCostCents,
-      current_value_cents: 0,
+      avg_cost: avgCostCents,
+      current_value: 0,
     })
 
     const savedHolding = await this.holdings.save(holding)

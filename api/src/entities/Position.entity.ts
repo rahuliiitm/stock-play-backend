@@ -1,5 +1,5 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
-import { Portfolio } from './Portfolio.entity'
+import { PortfolioV2 } from './PortfolioV2.entity'
 
 @Entity('positions')
 @Index(['portfolio_id', 'symbol'], { unique: true })
@@ -22,7 +22,7 @@ export class Position {
   @Column({ type: 'decimal', precision: 18, scale: 2, default: 0 })
   current_value_amount!: number
 
-  @ManyToOne(() => Portfolio, (p) => p.positions)
+  @ManyToOne(() => PortfolioV2)
   @JoinColumn({ name: 'portfolio_id' })
-  portfolio!: Portfolio
+  portfolio!: PortfolioV2
 } 

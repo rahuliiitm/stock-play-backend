@@ -45,7 +45,7 @@ async function runTest() {
       slug: `e2e-test-${Date.now()}`,
       starts_at: startsAt.toISOString(),
       ends_at: endsAt.toISOString(),
-      initial_balance_cents: 10000000,
+      initial_balance: 10000000,
       contest_type: 'PORTFOLIO',
     }
     const contestRes = await axios.post(`${BASE_URL}/contests`, contestPayload, { headers: { Authorization: `Bearer ${userJwt}` } })

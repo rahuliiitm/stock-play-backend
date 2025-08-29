@@ -26,10 +26,10 @@ describe('Stocks API (e2e)', () => {
         .expect(200);
 
       expect(response.body).toHaveProperty('symbol', 'RELIANCE');
-      expect(response.body).toHaveProperty('priceCents');
+      expect(response.body).toHaveProperty('price');
       expect(response.body).toHaveProperty('asOf');
-      expect(typeof response.body.priceCents).toBe('number');
-      expect(response.body.priceCents).toBeGreaterThan(0);
+      expect(typeof response.body.price).toBe('number');
+      expect(response.body.price).toBeGreaterThan(0);
     });
 
     it('should get stock quote for INFY', async () => {
@@ -38,10 +38,10 @@ describe('Stocks API (e2e)', () => {
         .expect(200);
 
       expect(response.body).toHaveProperty('symbol', 'INFY');
-      expect(response.body).toHaveProperty('priceCents');
+      expect(response.body).toHaveProperty('price');
       expect(response.body).toHaveProperty('asOf');
-      expect(typeof response.body.priceCents).toBe('number');
-      expect(response.body.priceCents).toBeGreaterThan(0);
+      expect(typeof response.body.price).toBe('number');
+      expect(response.body.price).toBeGreaterThan(0);
     });
 
     it('should get stock quote for TCS', async () => {
@@ -50,10 +50,10 @@ describe('Stocks API (e2e)', () => {
         .expect(200);
 
       expect(response.body).toHaveProperty('symbol', 'TCS');
-      expect(response.body).toHaveProperty('priceCents');
+      expect(response.body).toHaveProperty('price');
       expect(response.body).toHaveProperty('asOf');
-      expect(typeof response.body.priceCents).toBe('number');
-      expect(response.body.priceCents).toBeGreaterThan(0);
+      expect(typeof response.body.price).toBe('number');
+      expect(response.body.price).toBeGreaterThan(0);
     });
   });
 

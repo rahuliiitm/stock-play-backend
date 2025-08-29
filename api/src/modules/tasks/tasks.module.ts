@@ -4,7 +4,7 @@ import { ScheduleModule } from '@nestjs/schedule'
 import { LeaderboardModule } from '../leaderboard/leaderboard.module'
 import { LeaderboardRefreshService } from './leaderboard-refresh.service'
 import { StockPriceHistory } from '../../entities/StockPriceHistory.entity'
-import { PortfolioResult } from '../../entities/PortfolioResult.entity'
+
 import { PortfolioV2 } from '../../entities/PortfolioV2.entity'
 import { Holding } from '../../entities/Holding.entity'
 import { PortfolioSnapshotV2 } from '../../entities/PortfolioSnapshotV2.entity'
@@ -18,7 +18,7 @@ import { SymbolsJobsService } from './symbols-jobs.service'
     ScheduleModule.forRoot(),
     TypeOrmModule.forFeature([
       StockPriceHistory, 
-      PortfolioResult, 
+ 
       PortfolioV2, 
       Holding, 
       PortfolioSnapshotV2

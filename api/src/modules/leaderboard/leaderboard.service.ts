@@ -46,7 +46,7 @@ export class LeaderboardService {
     // Calculate total market value
     let totalValueCents = 0
     for (const holding of portfolio.holdings) {
-      totalValueCents += holding.current_value_cents || 0
+      totalValueCents += holding.current_value || 0
     }
 
     // Update or create leaderboard entry

@@ -118,8 +118,8 @@ export class PortfolioServiceV2 {
     }
 
     const quote = await this.quotes.getQuote(symbol)
-    const priceCents = quote.priceCents
-    const totalValueCents = Math.round(priceCents * quantity)
+    const price = quote.price
+    const totalValue = Math.round(price * quantity)
 
     // Create transaction
     const transaction = this.transactions.create({
@@ -127,8 +127,8 @@ export class PortfolioServiceV2 {
       symbol,
       exchange,
       quantity_delta: String(quantity),
-      price_cents: priceCents,
-      fees_cents: 0, // Can be configured later
+      price: price,
+      fees: 0, // Can be configured later
       type: 'BUY',
     })
 
@@ -137,10 +137,10 @@ export class PortfolioServiceV2 {
     if (holding) {
       const existingQty = Number(holding.quantity)
       const newQty = existingQty + quantity
-      const totalInvested = holding.avg_cost_cents * existingQty + totalValueCents
-      holding.avg_cost_cents = Math.round(totalInvested / newQty)
+      const totalInvested = holding.avg_cost * existingQty + totalValue
+      holding.avg_cost = Math.round(totalInvested / newQty)
       holding.quantity = String(newQty)
-      holding.current_value_cents = Math.round(priceCents * newQty)
+      holding.current_value = Math.round(price * newQty)
       await this.holdings.save(holding)
     } else {
       holding = this.holdings.create({
@@ -148,8 +148,8 @@ export class PortfolioServiceV2 {
         symbol,
         exchange,
         quantity: String(quantity),
-        avg_cost_cents: priceCents,
-        current_value_cents: totalValueCents,
+        avg_cost: price,
+        current_value: totalValue,
       })
       await this.holdings.save(holding)
     }
@@ -176,8 +176,8 @@ export class PortfolioServiceV2 {
     }
 
     const quote = await this.quotes.getQuote(symbol)
-    const priceCents = quote.priceCents
-    const proceedsCents = Math.round(priceCents * sellQty)
+    const price = quote.price
+    const proceeds = Math.round(price * sellQty)
 
     // Create transaction
     const transaction = this.transactions.create({
@@ -185,8 +185,8 @@ export class PortfolioServiceV2 {
       symbol,
       exchange: holding.exchange,
       quantity_delta: String(-sellQty),
-      price_cents: priceCents,
-      fees_cents: 0,
+      price: price,
+      fees: 0,
       type: 'SELL',
     })
 
@@ -195,7 +195,7 @@ export class PortfolioServiceV2 {
       await this.holdings.remove(holding)
     } else {
       holding.quantity = String(remainingQty)
-      holding.current_value_cents = Math.round(priceCents * remainingQty)
+      holding.current_value = Math.round(price * remainingQty)
       await this.holdings.save(holding)
     }
 

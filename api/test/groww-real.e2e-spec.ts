@@ -82,8 +82,8 @@ describe('Groww Real API Integration (e2e)', () => {
     console.log('📊 Quote response:', JSON.stringify(quote, null, 2))
     
     expect(quote).toHaveProperty('symbol', symbol)
-    expect(typeof quote.priceCents).toBe('number')
-    expect(quote.priceCents).toBeGreaterThan(0)
+    expect(typeof quote.price).toBe('number')
+    expect(quote.price).toBeGreaterThan(0)
     expect(quote.source).toBe('groww')
   }, 15000)
 

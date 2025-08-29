@@ -41,7 +41,7 @@ describe(suiteName, () => {
 					useFactory: () => ({
 						getQuote: async (symbol: string) => ({
 							symbol,
-							priceCents: 140930, // Mock price for RELIANCE
+							price: 140930, // Mock price for RELIANCE
 							asOf: new Date().toISOString(),
 							source: 'groww',
 						}),
@@ -74,7 +74,7 @@ describe(suiteName, () => {
 		if (!hasGroww) return
 		const res = await request(app.getHttpServer()).get(`/stocks/${symbol}/quote`).expect(200)
 		expect(res.body).toHaveProperty('symbol', symbol)
-		expect(typeof res.body.priceCents).toBe('number')
+		expect(typeof res.body.price).toBe('number')
 	})
 
 	it('GET /stocks/:symbol/history returns candles', async () => {

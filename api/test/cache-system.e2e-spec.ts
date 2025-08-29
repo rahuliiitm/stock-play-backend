@@ -55,9 +55,9 @@ describe('Optimized Cache System (e2e)', () => {
       
       expect(quote).toBeDefined();
       expect(quote).toHaveProperty('symbol', symbol);
-      expect(quote).toHaveProperty('priceCents');
-      expect(typeof quote.priceCents).toBe('number');
-      expect(quote.priceCents).toBeGreaterThan(0);
+      expect(quote).toHaveProperty('price');
+      expect(typeof quote.price).toBe('number');
+      expect(quote.price).toBeGreaterThan(0);
     });
 
     it('should get multiple cached quotes efficiently', async () => {
@@ -71,8 +71,8 @@ describe('Optimized Cache System (e2e)', () => {
       
       for (const [symbol, quote] of cachedQuotes) {
         expect(quote).toHaveProperty('symbol', symbol);
-        expect(quote).toHaveProperty('priceCents');
-        expect(typeof quote.priceCents).toBe('number');
+        expect(quote).toHaveProperty('price');
+        expect(typeof quote.price).toBe('number');
       }
     });
 

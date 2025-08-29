@@ -41,7 +41,7 @@ describe('AppController (e2e)', () => {
       .expect(200)
       .expect((res) => {
         expect(res.body).toHaveProperty('symbol');
-        expect(res.body).toHaveProperty('priceCents');
+        expect(res.body).toHaveProperty('price');
         expect(res.body).toHaveProperty('asOf');
       });
   });

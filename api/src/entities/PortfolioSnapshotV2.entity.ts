@@ -14,13 +14,13 @@ export class PortfolioSnapshotV2 {
   date!: Date
 
   @Column({ type: 'decimal', precision: 18, scale: 2 })
-  market_value_cents!: number
+  market_value!: number
 
   @Column({ type: 'decimal', precision: 18, scale: 2 })
-  invested_cents!: number
+  invested!: number
 
   @Column({ type: 'decimal', precision: 18, scale: 2 })
-  pnl_cents!: number
+  pnl!: number
 
   @Column({ type: 'decimal', precision: 8, scale: 4 })
   return_percent!: number

@@ -44,8 +44,8 @@ describe(suiteName, () => {
 		const quote = await growwSource.getQuote(symbol)
 		
 		expect(quote).toHaveProperty('symbol', symbol)
-		expect(typeof quote.priceCents).toBe('number')
-		expect(quote.priceCents).toBeGreaterThan(0)
+		expect(typeof quote.price).toBe('number')
+		expect(quote.price).toBeGreaterThan(0)
 		expect(quote.source).toBe('groww')
 	}, 10000)
 

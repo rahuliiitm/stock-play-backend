@@ -8,13 +8,13 @@ import { getRedis } from '../../lib/redis'
 
 interface CachedQuote {
   symbol: string
-  priceCents: number
+  price: number
   asOf: string
   source: string
-  openCents?: number
-  highCents?: number
-  lowCents?: number
-  prevCloseCents?: number
+  open?: number
+  high?: number
+  low?: number
+  prevClose?: number
 }
 
 @Injectable()
@@ -43,6 +43,20 @@ export class StockQuoteCacheService {
       .getRawMany()
 
     return holdings.map(h => h.symbol).filter(Boolean)
+  }
+
+  /**
+   * Get all active symbols from stock universe (for complete coverage)
+   */
+  async getAllActiveSymbols(): Promise<string[]> {
+    const symbols = await this.holdings
+      .createQueryBuilder('holding')
+      .select('DISTINCT holding.symbol', 'symbol')
+      .where('holding.symbol IS NOT NULL')
+      .andWhere('holding.symbol != ""')
+      .getRawMany()
+
+    return symbols.map(h => h.symbol).filter(Boolean)
   }
 
   /**
@@ -156,7 +170,7 @@ export class StockQuoteCacheService {
           }
           
           updatedCount++
-          this.logger.debug(`Updated quote for ${symbol}: ${quote.priceCents} cents`)
+          this.logger.debug(`Updated quote for ${symbol}: ₹${quote.price}`)
         } catch (error) {
           this.logger.error(`Failed to update quote for ${symbol}:`, error)
         }
@@ -199,7 +213,7 @@ export class StockQuoteCacheService {
         }
         
         updatedCount++
-        this.logger.debug(`Updated quote for ${symbol}: ${quote.priceCents} cents`)
+                  this.logger.debug(`Updated quote for ${symbol}: ₹${quote.price}`)
       } catch (error) {
         this.logger.error(`Failed to update quote for ${symbol}:`, error)
       }
@@ -261,11 +275,10 @@ export class StockQuoteCacheService {
   }
 
   /**
-   * Scheduled job to update all quotes every 5 minutes
+   * Event listener for quote updates (replaces 5-minute scheduler)
    */
-  @Cron(CronExpression.EVERY_5_MINUTES)
-  async scheduledQuoteUpdate(): Promise<void> {
-    this.logger.log('Running scheduled quote cache update')
+  async onQuoteUpdateRequest(): Promise<void> {
+    this.logger.log('Received quote update request via event')
     await this.updateAllQuotes()
   }
 

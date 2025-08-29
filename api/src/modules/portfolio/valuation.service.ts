@@ -24,7 +24,7 @@ export interface PortfolioValuation {
 }
 
 export interface CachedQuote {
-  priceCents: number
+  price: number
   timestamp: number
   source: string
 }
@@ -131,11 +131,11 @@ export class ValuationService {
     }
   }
 
-  async getQuote(symbol: string): Promise<{ priceCents: number; source: string }> {
+  async getQuote(symbol: string): Promise<{ price: number; source: string }> {
     // Try cache first
     const cached = await this.getCachedQuote(symbol)
     if (cached) {
-      return { priceCents: cached.priceCents, source: cached.source }
+      return { price: cached.price, source: cached.source }
     }
 
     // Fetch fresh quote
@@ -143,23 +143,23 @@ export class ValuationService {
 
     // Cache the result
     await this.setCachedQuote(symbol, {
-      priceCents: quote.priceCents,
+      price: quote.price,
       timestamp: Date.now(),
       source: quote.source,
     })
 
-    return { priceCents: quote.priceCents, source: quote.source }
+    return { price: quote.price, source: quote.source }
   }
 
-  async getBulkQuotes(symbols: string[]): Promise<Map<string, { priceCents: number; source: string }>> {
-    const results = new Map<string, { priceCents: number; source: string }>()
+  async getBulkQuotes(symbols: string[]): Promise<Map<string, { price: number; source: string }>> {
+    const results = new Map<string, { price: number; source: string }>()
     const uncachedSymbols: string[] = []
 
     // Check cache for all symbols
     for (const symbol of symbols) {
       const cached = await this.getCachedQuote(symbol)
       if (cached) {
-        results.set(symbol, { priceCents: cached.priceCents, source: cached.source })
+        results.set(symbol, { price: cached.price, source: cached.source })
       } else {
         uncachedSymbols.push(symbol)
       }
@@ -181,11 +181,11 @@ export class ValuationService {
 
       for (const { symbol, quote } of quoteResults) {
         if (quote) {
-          results.set(symbol, { priceCents: quote.priceCents, source: quote.source })
+          results.set(symbol, { price: quote.price, source: quote.source })
 
           // Cache the result
           await this.setCachedQuote(symbol, {
-            priceCents: quote.priceCents,
+            price: quote.price,
             timestamp: Date.now(),
             source: quote.source,
           })
@@ -229,11 +229,11 @@ export class ValuationService {
 
     for (const holding of holdings) {
       const quantity = Number(holding.quantity)
-      const avgCostCents = holding.avg_cost_cents
+      const avgCostCents = holding.avg_cost
 
       const quote = quotesMap.get(holding.symbol)
       if (quote) {
-        const currentPriceCents = quote.priceCents
+        const currentPriceCents = quote.price
         const marketValueCents = Math.round(currentPriceCents * quantity)
         const investedCents = Math.round(avgCostCents * quantity)
         const pnlCents = marketValueCents - investedCents
@@ -252,7 +252,7 @@ export class ValuationService {
         })
       } else {
         // Use last known value if quote unavailable
-        const marketValueCents = holding.current_value_cents
+        const marketValueCents = holding.current_value
         const investedCents = Math.round(avgCostCents * quantity)
         const pnlCents = marketValueCents - investedCents
 
@@ -263,7 +263,7 @@ export class ValuationService {
           symbol: holding.symbol,
           quantity,
           avgCostCents,
-          currentPriceCents: holding.current_value_cents,
+          currentPriceCents: holding.current_value,
           marketValueCents,
           pnlCents,
           exchange: holding.exchange,
@@ -295,9 +295,9 @@ export class ValuationService {
     const snapshot = this.snapshots.create({
       portfolio_id: portfolioId,
       date,
-      market_value_cents: valuation.marketValueCents,
-      invested_cents: valuation.investedCents,
-      pnl_cents: valuation.pnlCents,
+      market_value: valuation.marketValueCents,
+      invested: valuation.investedCents,
+      pnl: valuation.pnlCents,
       return_percent: valuation.returnPercent,
     })
 

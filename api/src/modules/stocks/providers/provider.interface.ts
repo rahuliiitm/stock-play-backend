@@ -1,12 +1,12 @@
 export interface QuoteResult {
   symbol: string
-  priceCents: number
+  price: number
   asOf: string
   source: string
-  openCents?: number
-  highCents?: number
-  lowCents?: number
-  prevCloseCents?: number
+  open?: number
+  high?: number
+  low?: number
+  prevClose?: number
 }
 
 export interface CandleResult { time: string; open: number; high: number; low: number; close: number; volume: number }

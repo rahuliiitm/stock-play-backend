@@ -20,10 +20,10 @@ export class Holding {
   quantity!: string
 
   @Column({ type: 'decimal', precision: 18, scale: 2 })
-  avg_cost_cents!: number
+  avg_cost!: number
 
   @Column({ type: 'decimal', precision: 18, scale: 2, default: 0 })
-  current_value_cents!: number
+  current_value!: number
 
   @ManyToOne(() => PortfolioV2, (p) => p.holdings)
   @JoinColumn({ name: 'portfolio_id' })

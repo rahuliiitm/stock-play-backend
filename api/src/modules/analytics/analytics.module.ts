@@ -7,9 +7,9 @@ import { AnalyticsJobsService } from '../tasks/analytics-jobs.service'
 import { PortfolioPerformance } from '../../entities/PortfolioPerformance.entity'
 import { PositionPerformance } from '../../entities/PositionPerformance.entity'
 import { MarketMovers } from '../../entities/MarketMovers.entity'
-import { Portfolio } from '../../entities/Portfolio.entity'
+import { PortfolioV2 } from '../../entities/PortfolioV2.entity'
 import { Position } from '../../entities/Position.entity'
-import { ContestParticipant } from '../../entities/ContestParticipant.entity'
+
 import { StocksModule } from '../stocks/stocks.module'
 
 @Module({
@@ -19,9 +19,8 @@ import { StocksModule } from '../stocks/stocks.module'
       PortfolioPerformance,
       PositionPerformance,
       MarketMovers,
-      Portfolio,
+      PortfolioV2,
       Position,
-      ContestParticipant,
     ]),
     StocksModule,
   ],

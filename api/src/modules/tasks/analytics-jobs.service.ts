@@ -2,15 +2,15 @@ import { Injectable } from '@nestjs/common'
 import { Cron, CronExpression } from '@nestjs/schedule'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
-import { Portfolio } from '../../entities/Portfolio.entity'
+import { PortfolioV2 } from '../../entities/PortfolioV2.entity'
 import { Position } from '../../entities/Position.entity'
 import { AnalyticsService } from '../analytics/analytics.service'
 
 @Injectable()
 export class AnalyticsJobsService {
   constructor(
-    @InjectRepository(Portfolio)
-    private readonly portfolios: Repository<Portfolio>,
+    @InjectRepository(PortfolioV2)
+    private readonly portfolios: Repository<PortfolioV2>,
     
     @InjectRepository(Position)
     private readonly positions: Repository<Position>,
@@ -28,16 +28,16 @@ export class AnalyticsJobsService {
       
       // Calculate performance for all active portfolios
       const portfolios = await this.portfolios.find({
-        relations: ['participant', 'positions']
+        relations: ['user', 'holdings']
       })
       
       for (const portfolio of portfolios) {
         try {
           await this.analytics.calculateDailyPortfolioPerformance(portfolio.id, date)
           
-          // Calculate performance for all positions in this portfolio
-          for (const position of portfolio.positions) {
-            await this.analytics.calculateDailyPositionPerformance(position.id, date)
+          // Calculate performance for all holdings in this portfolio
+          for (const holding of portfolio.holdings) {
+            await this.analytics.calculateDailyPositionPerformance(holding.id, date)
           }
           
           console.log(`Calculated performance for portfolio ${portfolio.id}`)
@@ -47,7 +47,8 @@ export class AnalyticsJobsService {
       }
       
       // Calculate market movers
-      await this.analytics.calculateDailyGainersLosers(date)
+      // TODO: Implement market movers calculation for new system
+      console.log('Market movers calculation not yet implemented')
       
       console.log('Daily performance calculation completed successfully')
     } catch (error) {
@@ -64,7 +65,8 @@ export class AnalyticsJobsService {
       const date = new Date()
       
       // Calculate weekly gainers/losers
-      await this.analytics.calculateDailyGainersLosers(date, 10) // Top 10
+      // TODO: Implement market movers calculation for new system
+      console.log('Market movers calculation not yet implemented')
       
       console.log('Weekly performance calculation completed successfully')
     } catch (error) {
@@ -77,12 +79,12 @@ export class AnalyticsJobsService {
     const calculationDate = date || new Date()
     
     const portfolios = await this.portfolios.find({
-      relations: ['participant', 'positions']
+      relations: ['user', 'holdings']
     })
     
     const results = {
       portfoliosProcessed: 0,
-      positionsProcessed: 0,
+      holdingsProcessed: 0,
       errors: [] as string[]
     }
     
@@ -91,9 +93,9 @@ export class AnalyticsJobsService {
         await this.analytics.calculateDailyPortfolioPerformance(portfolio.id, calculationDate)
         results.portfoliosProcessed++
         
-        for (const position of portfolio.positions) {
-          await this.analytics.calculateDailyPositionPerformance(position.id, calculationDate)
-          results.positionsProcessed++
+        for (const holding of portfolio.holdings) {
+          await this.analytics.calculateDailyPositionPerformance(holding.id, calculationDate)
+          results.holdingsProcessed++
         }
       } catch (error) {
         results.errors.push(`Portfolio ${portfolio.id}: ${error.message}`)
@@ -101,7 +103,8 @@ export class AnalyticsJobsService {
     }
     
     // Calculate market movers
-    await this.analytics.calculateDailyGainersLosers(calculationDate)
+    // TODO: Implement market movers calculation for new system
+    console.log('Market movers calculation not yet implemented')
     
     return results
   }

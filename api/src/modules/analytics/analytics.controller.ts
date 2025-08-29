@@ -15,9 +15,10 @@ export class AnalyticsController {
   @Get('portfolio/:portfolioId/performance')
   async getPortfolioPerformance(
     @Param('portfolioId') portfolioId: string,
-    @Query('days') days: string = '30'
+    @Query('from') from?: string,
+    @Query('to') to?: string
   ) {
-    return this.analytics.getPortfolioAnalytics(portfolioId, parseInt(days))
+    return this.analytics.getPortfolioAnalytics(portfolioId, from, to)
   }
 
   @UseGuards(JwtAuthGuard)
@@ -26,7 +27,7 @@ export class AnalyticsController {
     @Param('portfolioId') portfolioId: string,
     @Query('days') days: string = '30'
   ) {
-    return this.analytics.getPositionAnalytics(portfolioId, parseInt(days))
+    throw new Error('Position analytics not yet implemented for new system')
   }
 
   @UseGuards(JwtAuthGuard)
@@ -50,8 +51,7 @@ export class AnalyticsController {
     @Query('period') period: 'daily' | 'weekly' = 'daily',
     @Query('date') dateStr?: string
   ) {
-    const date = dateStr ? new Date(dateStr) : new Date()
-    return this.analytics.getGainersLosers(period, date)
+    throw new Error('Market movers not yet implemented for new system')
   }
 
   @Get('market/gainers')
@@ -59,9 +59,7 @@ export class AnalyticsController {
     @Query('period') period: 'daily' | 'weekly' = 'daily',
     @Query('date') dateStr?: string
   ) {
-    const date = dateStr ? new Date(dateStr) : new Date()
-    const { gainers } = await this.analytics.getGainersLosers(period, date)
-    return gainers
+    throw new Error('Market movers not yet implemented for new system')
   }
 
   @Get('market/losers')
@@ -69,9 +67,7 @@ export class AnalyticsController {
     @Query('period') period: 'daily' | 'weekly' = 'daily',
     @Query('date') dateStr?: string
   ) {
-    const date = dateStr ? new Date(dateStr) : new Date()
-    const { losers } = await this.analytics.getGainersLosers(period, date)
-    return losers
+    throw new Error('Market movers not yet implemented for new system')
   }
 
   // ===========================================
@@ -89,14 +85,7 @@ export class AnalyticsController {
   @UseGuards(JwtAuthGuard)
   @Post('admin/calculate-gainers-losers')
   async triggerGainersLosersCalculation(@Query('date') dateStr?: string) {
-    const date = dateStr ? new Date(dateStr) : new Date()
-    const result = await this.analytics.calculateDailyGainersLosers(date)
-    return {
-      message: 'Gainers/Losers calculation completed',
-      date,
-      gainersCount: result.gainers.length,
-      losersCount: result.losers.length
-    }
+    throw new Error('Market movers calculation not yet implemented for new system')
   }
 
   // ===========================================

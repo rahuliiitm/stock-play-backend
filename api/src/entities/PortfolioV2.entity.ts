@@ -20,7 +20,7 @@ export class PortfolioV2 {
   visibility!: PortfolioVisibility
 
   @Column({ type: 'decimal', precision: 18, scale: 2, default: 0 })
-  initial_value_cents!: number
+  initial_value!: number
 
   @CreateDateColumn({ type: 'timestamptz' })
   created_at!: Date
