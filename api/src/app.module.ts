@@ -10,6 +10,10 @@ import { TasksModule } from './modules/tasks/tasks.module'
 import { LeaderboardModule } from './modules/leaderboard/leaderboard.module'
 import { EngagementModule } from './modules/engagement/engagement.module'
 import { IndicatorsModule } from './modules/indicators/indicators.module'
+import { UsersModule } from './modules/users/users.module'
+// MarketDataModule and TradingModule will be added later
+// import { MarketDataModule } from './modules/market-data/market-data.module'
+// import { TradingModule } from './modules/trading/trading.module'
 
 @Module({
   imports: [
@@ -34,6 +38,9 @@ import { IndicatorsModule } from './modules/indicators/indicators.module'
     LeaderboardModule,
     EngagementModule,
     IndicatorsModule,
+    UsersModule,
+    // MarketDataModule,
+    // TradingModule,
   ],
   controllers: [AppController],
   providers: [AppService],

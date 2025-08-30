@@ -1,10 +1,10 @@
-import { GrowwAPI, Exchange, Segment } from 'growwapi'
+import { GrowwAPI } from 'growwapi'
 import { config } from 'dotenv'
 
 // Load environment variables
 config({ path: '.env.development' })
 
-describe('Groww Real API Integration (e2e)', () => {
+describe('GrowwAPI Integration (e2e)', () => {
   let groww: GrowwAPI
 
   beforeAll(async () => {
@@ -21,14 +21,12 @@ describe('Groww Real API Integration (e2e)', () => {
       return
     }
 
-    // Initialize GrowwAPI
     groww = new GrowwAPI()
-    console.log('✅ GrowwAPI initialized successfully')
   })
 
   const symbol = 'RELIANCE'
 
-  it('should get real quote data from Groww API', async () => {
+  it('should get quote using growwapi', async () => {
     if (!process.env.GROWW_API_KEY || !process.env.GROWW_ACCESS_TOKEN) {
       console.log('⏭️ Skipping - missing credentials')
       return
@@ -38,8 +36,7 @@ describe('Groww Real API Integration (e2e)', () => {
     
     const quote = await groww.liveData.getQuote({
       tradingSymbol: symbol,
-      exchange: Exchange.NSE,
-      segment: Segment.CASH
+      exchange: 'NSE'
     })
     
     console.log('📊 Quote response:', JSON.stringify(quote, null, 2))
@@ -48,7 +45,7 @@ describe('Groww Real API Integration (e2e)', () => {
     expect(quote.lastPrice).toBeGreaterThan(0)
   }, 15000)
 
-  it('should get real historical data from Groww API', async () => {
+  it('should get historical data using growwapi', async () => {
     if (!process.env.GROWW_API_KEY || !process.env.GROWW_ACCESS_TOKEN) {
       console.log('⏭️ Skipping - missing credentials')
       return
@@ -61,7 +58,7 @@ describe('Groww Real API Integration (e2e)', () => {
     
     const historicalData = await groww.historicData.get({
       tradingSymbol: symbol,
-      exchange: Exchange.NSE,
+      exchange: 'NSE',
       from: from.toISOString(),
       to: to.toISOString()
     })
@@ -77,7 +74,7 @@ describe('Groww Real API Integration (e2e)', () => {
     }
   }, 20000)
 
-  it('should get real holdings data from Groww API', async () => {
+  it('should get holdings using growwapi', async () => {
     if (!process.env.GROWW_API_KEY || !process.env.GROWW_ACCESS_TOKEN) {
       console.log('⏭️ Skipping - missing credentials')
       return
@@ -98,7 +95,7 @@ describe('Groww Real API Integration (e2e)', () => {
     }
   }, 15000)
 
-  it('should get real positions data from Groww API', async () => {
+  it('should get positions using growwapi', async () => {
     if (!process.env.GROWW_API_KEY || !process.env.GROWW_ACCESS_TOKEN) {
       console.log('⏭️ Skipping - missing credentials')
       return
@@ -117,5 +114,20 @@ describe('Groww Real API Integration (e2e)', () => {
     if (positions.positions) {
       expect(Array.isArray(positions.positions)).toBe(true)
     }
+  }, 15000)
+
+  it('should get margin details using growwapi', async () => {
+    if (!process.env.GROWW_API_KEY || !process.env.GROWW_ACCESS_TOKEN) {
+      console.log('⏭️ Skipping - missing credentials')
+      return
+    }
+
+    console.log('📈 Testing margin details')
+    
+    const margins = await groww.margins.details()
+    
+    console.log('📊 Margin details:', JSON.stringify(margins, null, 2))
+    
+    expect(margins).toBeDefined()
   }, 15000)
 })

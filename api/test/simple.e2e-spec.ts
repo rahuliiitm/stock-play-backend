@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from './../src/app.module';
 
 describe('Simple E2E Tests', () => {
@@ -34,8 +34,9 @@ describe('Simple E2E Tests', () => {
   describe('Market Data SDK', () => {
     it('should have market data SDK available', () => {
       // Test that the SDK is properly imported and available
-      const { GrowwSource, NseSource } = require('../src/lib/market-data-sdk/sources/groww');
-      expect(GrowwSource).toBeDefined();
+      const { GrowwAPI } = require('growwapi');
+      const { NseSource } = require('../src/lib/market-data-sdk/sources/nse');
+      expect(GrowwAPI).toBeDefined();
       expect(NseSource).toBeDefined();
     });
 

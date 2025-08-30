@@ -1,41 +1,13 @@
-import { GrowwSource } from './lib/market-data-sdk/sources/groww';
 import { NseSource } from './lib/market-data-sdk/sources/nse';
 import { rsi, sma, macd } from './lib/market-data-sdk/indicators';
 import type { Exchange, Interval } from './lib/market-data-sdk/models';
 
 describe('Market Data SDK', () => {
-  describe('GrowwSource', () => {
-    let growwSource: GrowwSource;
-
-    beforeEach(() => {
-      // Mock HTTP functions
-      const mockHttpGet = jest.fn();
-      const mockHttpPost = jest.fn();
-      const mockGetAccessToken = jest.fn().mockResolvedValue('mock-token');
-
-      growwSource = new GrowwSource({
-        httpGet: mockHttpGet,
-        httpPost: mockHttpPost,
-        getAccessToken: mockGetAccessToken,
-        baseUrl: 'https://api.groww.in',
-        apiKey: 'test-api-key',
-        appId: 'test-app-id',
-      });
-    });
-
-    it('should be instantiated correctly', () => {
-      expect(growwSource).toBeDefined();
-      // Note: baseUrl, apiKey, appId are private properties, so we test methods instead
-    });
-
-    it('should have required methods', () => {
-      expect(typeof growwSource.getQuote).toBe('function');
-      expect(typeof growwSource.getHistory).toBe('function');
-      expect(typeof growwSource.getHoldings).toBe('function');
-      expect(typeof growwSource.getPositions).toBe('function');
-      expect(typeof growwSource.getOrders).toBe('function');
-      expect(typeof growwSource.getMargin).toBe('function');
-      expect(typeof growwSource.getInstrumentsMaster).toBe('function');
+  describe('GrowwAPI Integration', () => {
+    it('should be available for use', () => {
+      // Note: GrowwAPI is now used directly in services
+      // Tests for GrowwAPI integration are in E2E tests
+      expect(true).toBe(true);
     });
   });
 

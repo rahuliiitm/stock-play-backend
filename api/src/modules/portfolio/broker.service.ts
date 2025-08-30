@@ -3,9 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { BrokerAccount } from '../../entities/BrokerAccount.entity'
 import { BrokerToken } from '../../entities/BrokerToken.entity'
-import { GrowwSource, GrowwHolding } from '../../lib/market-data-sdk/sources/groww'
-import { HttpGet } from '../../lib/market-data-sdk/source'
-import { GrowwAuthService } from '../stocks/providers/groww-auth.service'
+import { GrowwAPI, Exchange, Segment } from 'growwapi'
 
 
 
@@ -20,13 +18,16 @@ export interface BrokerSyncResult {
 export class BrokerService {
   private readonly logger = new Logger(BrokerService.name)
 
+  private readonly groww: GrowwAPI
+
   constructor(
     @InjectRepository(BrokerAccount)
     private readonly brokerAccounts: Repository<BrokerAccount>,
     @InjectRepository(BrokerToken)
     private readonly brokerTokens: Repository<BrokerToken>,
-    private readonly growwAuth: GrowwAuthService,
-  ) {}
+  ) {
+    this.groww = new GrowwAPI()
+  }
 
   async linkGrowwAccount(
     userId: string,
@@ -144,13 +145,9 @@ export class BrokerService {
 
   async refreshGrowwToken(brokerAccountId: string): Promise<boolean> {
     try {
-      // Use TOTP auth service to mint a fresh token
-      const token = await this.growwAuth.getAccessToken()
-      if (!token) return false
-
-      // Persist with a short expiry window (1 hour)
-      const expiresAt = new Date(Date.now() + 60 * 60 * 1000)
-      await this.storeToken(brokerAccountId, 'access', token, expiresAt)
+      // Note: growwapi handles authentication internally
+      // We just need to ensure the token is valid
+      this.logger.log(`Groww token refresh not needed for account ${brokerAccountId} - handled by growwapi`)
       return true
     } catch (error) {
       this.logger.error(`Failed to refresh token for broker account ${brokerAccountId}:`, error)
@@ -236,45 +233,11 @@ export class BrokerService {
     }
   }
 
-  private async fetchGrowwHoldings(accessToken: string): Promise<GrowwHolding[]> {
-    // Create HTTP client for Groww API
-    const httpGet: HttpGet = async (url: string, options) => {
-      const axios = (await import('axios')).default
-
-      const response = await axios.get(url, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Accept': 'application/json',
-          'X-API-VERSION': '1.0',
-          ...options?.headers,
-        },
-        params: options?.params,
-      })
-
-      return response.data
-    }
-
-    // Create Groww source with full API support
-    const growwSource = new GrowwSource({
-      httpGet,
-      httpPost: async (url: string, data?: any, options?: any) => {
-        const axios = (await import('axios')).default
-        const response = await axios.post(url, data, {
-          headers: options?.headers,
-          params: options?.params,
-        })
-        return response.data
-      },
-      getAccessToken: async () => accessToken,
-      baseUrl: process.env.GROWW_API_BASE || 'https://api.groww.in',
-      apiKey: process.env.GROWW_API_KEY,
-      appId: process.env.GROWW_APP_ID,
-    })
-
-    // Fetch holdings using Groww Portfolio API
+  private async fetchGrowwHoldings(accessToken: string): Promise<any[]> {
+    // Use growwapi to fetch holdings
     try {
-      const holdings = await growwSource.getHoldings()
-      return holdings
+      const holdings = await this.groww.holdings.list()
+      return holdings || []
     } catch (error) {
       this.logger.error('Failed to fetch holdings from Groww:', error)
       throw new Error(`Failed to fetch holdings: ${error.message}`)
@@ -309,32 +272,18 @@ export class BrokerService {
       throw new Error('Broker account not found')
     }
 
-    const accessToken = await this.getValidAccessToken(account.id)
-    if (!accessToken) {
-      throw new Error('No valid access token')
-    }
-
-    const httpGet: HttpGet = async (url: string, options) => {
-      const axios = (await import('axios')).default
-      const response = await axios.get(url, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'User-Agent': 'StockPlay-Backend/1.0',
-        },
-        params: options?.params,
+    // Use growwapi to get orders
+    try {
+      const orders = await this.groww.orders.getOrders({
+        page: 1,
+        pageSize: 50,
+        segment: Segment.CASH
       })
-      return response.data
+      return orders || []
+    } catch (error) {
+      this.logger.error('Failed to fetch orders from Groww:', error)
+      throw new Error(`Failed to fetch orders: ${error.message}`)
     }
-
-    const growwSource = new GrowwSource({
-      httpGet,
-      getAccessToken: async () => accessToken,
-      baseUrl: process.env.GROWW_API_BASE || 'https://api.groww.in',
-    })
-
-    return growwSource.getOrders()
   }
 
   async getGrowwMargin(userId: string, accountId: string): Promise<any> {
@@ -346,55 +295,27 @@ export class BrokerService {
       throw new Error('Broker account not found')
     }
 
-    const accessToken = await this.getValidAccessToken(account.id)
-    if (!accessToken) {
-      throw new Error('No valid access token')
+    // Use growwapi to get margin details
+    try {
+      const margin = await this.groww.margins.details()
+      return margin
+    } catch (error) {
+      this.logger.error('Failed to fetch margin from Groww:', error)
+      throw new Error(`Failed to fetch margin: ${error.message}`)
     }
-
-    const httpGet: HttpGet = async (url: string, options) => {
-      const axios = (await import('axios')).default
-      const response = await axios.get(url, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'User-Agent': 'StockPlay-Backend/1.0',
-        },
-        params: options?.params,
-      })
-      return response.data
-    }
-
-    const growwSource = new GrowwSource({
-      httpGet,
-      getAccessToken: async () => accessToken,
-      baseUrl: process.env.GROWW_API_BASE || 'https://api.groww.in',
-    })
-
-    return growwSource.getMargin()
   }
 
   async searchGrowwInstruments(query: string): Promise<any[]> {
-    // For instrument search, we can use a public endpoint or minimal auth
-    const httpGet: HttpGet = async (url: string, options) => {
-      const axios = (await import('axios')).default
-      const response = await axios.get(url, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'User-Agent': 'StockPlay-Backend/1.0',
-        },
-        params: options?.params,
+    // Use growwapi to search instruments
+    try {
+      const instructions = await this.groww.instructions.getFilteredInstructions({
+        search: query
       })
-      return response.data
+      return instructions || []
+    } catch (error) {
+      this.logger.error('Failed to search instruments from Groww:', error)
+      throw new Error(`Failed to search instruments: ${error.message}`)
     }
-
-    const growwSource = new GrowwSource({
-      httpGet,
-      baseUrl: process.env.GROWW_API_BASE || 'https://api.groww.in',
-    })
-
-    return growwSource.searchInstruments(query)
   }
 }
 

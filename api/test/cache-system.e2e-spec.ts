@@ -4,8 +4,7 @@ import { config } from 'dotenv';
 import { StockQuoteCacheService } from '../src/modules/stocks/stock-quote-cache.service';
 import { PortfolioValueUpdateService } from '../src/modules/portfolio/portfolio-value-update.service';
 import { HoldingsService } from '../src/modules/portfolio/holdings.service';
-import { StocksModule } from '../src/modules/stocks/stocks.module';
-import { PortfolioModule } from '../src/modules/portfolio/portfolio.module';
+import { AppModule } from '../src/app.module';
 
 // Load environment variables
 config({ path: '.env.development' });
@@ -18,7 +17,7 @@ describe('Optimized Cache System (e2e)', () => {
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [StocksModule, PortfolioModule],
+      imports: [AppModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();

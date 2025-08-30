@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from './../src/app.module';
 
 describe('Portfolio Basic Functionality (e2e)', () => {
@@ -22,7 +22,7 @@ describe('Portfolio Basic Functionality (e2e)', () => {
   describe('Stock Data', () => {
     it('should get stock quote for RELIANCE', async () => {
       const response = await request(app.getHttpServer())
-        .get('/stocks/quote/RELIANCE')
+        .get('/stocks/RELIANCE/quote')
         .expect(200);
 
       expect(response.body).toHaveProperty('symbol', 'RELIANCE');
@@ -34,7 +34,7 @@ describe('Portfolio Basic Functionality (e2e)', () => {
 
     it('should get stock quote for INFY', async () => {
       const response = await request(app.getHttpServer())
-        .get('/stocks/quote/INFY')
+        .get('/stocks/INFY/quote')
         .expect(200);
 
       expect(response.body).toHaveProperty('symbol', 'INFY');
@@ -46,13 +46,13 @@ describe('Portfolio Basic Functionality (e2e)', () => {
 
     it('should get stock historical data for RELIANCE', async () => {
       const response = await request(app.getHttpServer())
-        .get('/stocks/history/RELIANCE?interval=1M')
+        .get('/stocks/RELIANCE/history?intervalMinutes=1440')
         .expect(200);
 
       expect(Array.isArray(response.body)).toBe(true);
       if (response.body.length > 0) {
         const candle = response.body[0];
-        expect(candle).toHaveProperty('timestamp');
+        expect(candle).toHaveProperty('time');
         expect(candle).toHaveProperty('open');
         expect(candle).toHaveProperty('high');
         expect(candle).toHaveProperty('low');

@@ -1,14 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
-import { StocksModule } from '../src/modules/stocks/stocks.module';
+import request from 'supertest';
+import { AppModule } from '../src/app.module';
 
 describe('Stocks API (e2e)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [StocksModule],
+      imports: [AppModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
@@ -22,7 +22,7 @@ describe('Stocks API (e2e)', () => {
   describe('Stock Quotes', () => {
     it('should get stock quote for RELIANCE', async () => {
       const response = await request(app.getHttpServer())
-        .get('/stocks/quote/RELIANCE')
+        .get('/stocks/RELIANCE/quote')
         .expect(200);
 
       expect(response.body).toHaveProperty('symbol', 'RELIANCE');
@@ -34,7 +34,7 @@ describe('Stocks API (e2e)', () => {
 
     it('should get stock quote for INFY', async () => {
       const response = await request(app.getHttpServer())
-        .get('/stocks/quote/INFY')
+        .get('/stocks/INFY/quote')
         .expect(200);
 
       expect(response.body).toHaveProperty('symbol', 'INFY');
@@ -46,7 +46,7 @@ describe('Stocks API (e2e)', () => {
 
     it('should get stock quote for TCS', async () => {
       const response = await request(app.getHttpServer())
-        .get('/stocks/quote/TCS')
+        .get('/stocks/TCS/quote')
         .expect(200);
 
       expect(response.body).toHaveProperty('symbol', 'TCS');
@@ -60,13 +60,13 @@ describe('Stocks API (e2e)', () => {
   describe('Stock History', () => {
     it('should get stock historical data for RELIANCE', async () => {
       const response = await request(app.getHttpServer())
-        .get('/stocks/history/RELIANCE?interval=1M')
+        .get('/stocks/RELIANCE/history?intervalMinutes=1440')
         .expect(200);
 
       expect(Array.isArray(response.body)).toBe(true);
       if (response.body.length > 0) {
         const candle = response.body[0];
-        expect(candle).toHaveProperty('timestamp');
+        expect(candle).toHaveProperty('time');
         expect(candle).toHaveProperty('open');
         expect(candle).toHaveProperty('high');
         expect(candle).toHaveProperty('low');
@@ -82,13 +82,13 @@ describe('Stocks API (e2e)', () => {
 
     it('should get stock historical data for INFY', async () => {
       const response = await request(app.getHttpServer())
-        .get('/stocks/history/INFY?interval=1W')
+        .get('/stocks/INFY/history?intervalMinutes=10080')
         .expect(200);
 
       expect(Array.isArray(response.body)).toBe(true);
       if (response.body.length > 0) {
         const candle = response.body[0];
-        expect(candle).toHaveProperty('timestamp');
+        expect(candle).toHaveProperty('time');
         expect(candle).toHaveProperty('open');
         expect(candle).toHaveProperty('high');
         expect(candle).toHaveProperty('low');
@@ -99,29 +99,30 @@ describe('Stocks API (e2e)', () => {
   });
 
   describe('Stock Indicators', () => {
-    it('should calculate RSI for RELIANCE', async () => {
+    it('should calculate indicators for RELIANCE', async () => {
       const response = await request(app.getHttpServer())
-        .get('/stocks/indicators/RELIANCE/rsi?period=14')
+        .get('/stocks/RELIANCE/indicators')
         .expect(200);
 
-      expect(response.body).toHaveProperty('symbol', 'RELIANCE');
-      expect(response.body).toHaveProperty('indicator', 'rsi');
-      expect(response.body).toHaveProperty('value');
-      expect(typeof response.body.value).toBe('number');
-      expect(response.body.value).toBeGreaterThanOrEqual(0);
-      expect(response.body.value).toBeLessThanOrEqual(100);
+      expect(response.body).toHaveProperty('rsi');
+      expect(response.body).toHaveProperty('ma20');
+      expect(response.body).toHaveProperty('macd');
+      expect(typeof response.body.rsi).toBe('object');
+      expect(typeof response.body.ma20).toBe('object');
+      expect(typeof response.body.macd).toBe('object');
     });
 
-    it('should calculate SMA for INFY', async () => {
+    it('should calculate indicators for INFY', async () => {
       const response = await request(app.getHttpServer())
-        .get('/stocks/indicators/INFY/sma?period=20')
+        .get('/stocks/INFY/indicators')
         .expect(200);
 
-      expect(response.body).toHaveProperty('symbol', 'INFY');
-      expect(response.body).toHaveProperty('indicator', 'sma');
-      expect(response.body).toHaveProperty('value');
-      expect(typeof response.body.value).toBe('number');
-      expect(response.body.value).toBeGreaterThan(0);
+      expect(response.body).toHaveProperty('rsi');
+      expect(response.body).toHaveProperty('ma20');
+      expect(response.body).toHaveProperty('macd');
+      expect(typeof response.body.rsi).toBe('object');
+      expect(typeof response.body.ma20).toBe('object');
+      expect(typeof response.body.macd).toBe('object');
     });
   });
 });

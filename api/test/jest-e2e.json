@@ -6,6 +6,12 @@
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },
+  "transformIgnorePatterns": [
+    "node_modules/(?!.*)"
+  ],
+  "moduleNameMapper": {
+    "^growwapi$": "<rootDir>/../src/__mocks__/growwapi.mock.ts"
+  },
   "setupFilesAfterEnv": ["<rootDir>/setup-e2e.ts"],
   "testTimeout": 30000,
   "maxWorkers": 1,

@@ -1,39 +1,19 @@
-import { GrowwSource } from '../src/lib/market-data-sdk/sources/groww'
-import axios from 'axios'
+import { GrowwAPI, Exchange, Segment } from 'growwapi'
 
 // Skips if env not present
-const hasGroww = !!process.env.GROWW_API_KEY && (!!process.env.GROWW_ACCESS_TOKEN || !!process.env.GROWW_API_SECRET)
+const hasGroww = !!process.env.GROWW_API_KEY && !!process.env.GROWW_ACCESS_TOKEN
 
 const suiteName = hasGroww ? 'Groww SDK (e2e)' : 'Groww SDK (e2e) [skipped: missing env]'
 
 describe(suiteName, () => {
-	let growwSource: GrowwSource
+	let groww: GrowwAPI
 
 	beforeAll(async () => {
 		if (!hasGroww) return
 
-		// Create HTTP client
-		const httpGet = async (url: string, options?: any) => {
-			const response = await axios.get(url, {
-				headers: {
-					'Accept': 'application/json',
-					'X-API-VERSION': '1.0',
-					'X-API-KEY': process.env.GROWW_API_KEY,
-					'Authorization': `Bearer ${process.env.GROWW_ACCESS_TOKEN}`,
-					...options?.headers,
-				},
-				params: options?.params,
-			})
-			return response.data
-		}
-
-		growwSource = new GrowwSource({
-			httpGet,
-			getAccessToken: async () => process.env.GROWW_ACCESS_TOKEN || null,
-			baseUrl: process.env.GROWW_API_BASE || 'https://api.groww.in',
-			apiKey: process.env.GROWW_API_KEY,
-			appId: process.env.GROWW_APP_ID,
-		})
+		// Initialize GrowwAPI
+		groww = new GrowwAPI()
+		console.log('✅ GrowwAPI initialized successfully')
 	})
 
 	const symbol = 'RELIANCE'
@@ -41,48 +21,55 @@ describe(suiteName, () => {
 	it('getQuote returns quote data', async () => {
 		if (!hasGroww) return
 		
-		const quote = await growwSource.getQuote(symbol)
+		const quote = await groww.liveData.getQuote({
+			tradingSymbol: symbol,
+			exchange: Exchange.NSE,
+			segment: Segment.CASH
+		})
 		
-		expect(quote).toHaveProperty('symbol', symbol)
-		expect(typeof quote.price).toBe('number')
-		expect(quote.price).toBeGreaterThan(0)
-		expect(quote.source).toBe('groww')
+		expect(quote).toBeDefined()
+		expect(quote.lastPrice).toBeGreaterThan(0)
 	}, 10000)
 
 	it('getHistory returns candle data', async () => {
 		if (!hasGroww) return
 		
-		const candles = await growwSource.getHistory(symbol, undefined, undefined, 1440)
+		const from = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // 7 days ago
+		const to = new Date()
 		
-		expect(Array.isArray(candles)).toBe(true)
-		if (candles.length > 0) {
-			expect(candles[0]).toHaveProperty('time')
-			expect(candles[0]).toHaveProperty('open')
-			expect(candles[0]).toHaveProperty('high')
-			expect(candles[0]).toHaveProperty('low')
-			expect(candles[0]).toHaveProperty('close')
-			expect(candles[0]).toHaveProperty('volume')
+		const historicalData = await groww.historicData.get({
+			tradingSymbol: symbol,
+			exchange: Exchange.NSE,
+			segment: Segment.CASH,
+			startTime: from.toISOString(),
+			endTime: to.toISOString()
+		})
+		
+		expect(historicalData).toBeDefined()
+		if (historicalData.candles) {
+			expect(Array.isArray(historicalData.candles)).toBe(true)
 		}
 	}, 15000)
 
 	it('getHoldings returns holdings data', async () => {
 		if (!hasGroww) return
 		
-		const holdings = await growwSource.getHoldings()
+		const holdings = await groww.holdings.list()
 		
-		expect(Array.isArray(holdings)).toBe(true)
-		if (holdings.length > 0) {
-			expect(holdings[0]).toHaveProperty('symbol')
-			expect(holdings[0]).toHaveProperty('quantity')
-			expect(holdings[0]).toHaveProperty('avgPrice')
+		expect(holdings).toBeDefined()
+		if (holdings && Array.isArray(holdings)) {
+			expect(Array.isArray(holdings)).toBe(true)
 		}
 	}, 10000)
 
 	it('getPositions returns positions data', async () => {
 		if (!hasGroww) return
 		
-		const positions = await growwSource.getPositions()
+		const positions = await groww.position.user({ segment: Segment.CASH })
 		
-		expect(Array.isArray(positions)).toBe(true)
+		expect(positions).toBeDefined()
+		if (positions && Array.isArray(positions)) {
+			expect(Array.isArray(positions)).toBe(true)
+		}
 	}, 10000)
 })

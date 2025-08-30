@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from './../src/app.module';
 
 describe('AppController (e2e)', () => {
@@ -35,9 +35,9 @@ describe('AppController (e2e)', () => {
       });
   });
 
-  it('/stocks/quote/RELIANCE (GET) should return stock quote', () => {
+  it('/stocks/RELIANCE/quote (GET) should return stock quote', () => {
     return request(app.getHttpServer())
-      .get('/stocks/quote/RELIANCE')
+      .get('/stocks/RELIANCE/quote')
       .expect(200)
       .expect((res) => {
         expect(res.body).toHaveProperty('symbol');

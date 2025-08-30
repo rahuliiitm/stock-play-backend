@@ -3,8 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Cron, CronExpression } from '@nestjs/schedule'
 import { Holding } from '../../entities/Holding.entity'
-import { QuotesService } from './quotes.service'
 import { getRedis } from '../../lib/redis'
+import { GrowwAPI, Exchange, Segment } from 'growwapi'
 
 interface CachedQuote {
   symbol: string
@@ -26,10 +26,13 @@ export class StockQuoteCacheService {
   private requestCount = 0
   private lastResetTime = Date.now()
 
+  private readonly groww: GrowwAPI
+
   constructor(
     @InjectRepository(Holding) private readonly holdings: Repository<Holding>,
-    private readonly quotes: QuotesService,
-  ) {}
+  ) {
+    this.groww = new GrowwAPI()
+  }
 
   /**
    * Get all unique symbols from all portfolios
@@ -39,7 +42,7 @@ export class StockQuoteCacheService {
       .createQueryBuilder('holding')
       .select('DISTINCT holding.symbol', 'symbol')
       .where('holding.symbol IS NOT NULL')
-      .andWhere('holding.symbol != ""')
+      .andWhere('holding.symbol != \'\'')
       .getRawMany()
 
     return holdings.map(h => h.symbol).filter(Boolean)
@@ -53,7 +56,7 @@ export class StockQuoteCacheService {
       .createQueryBuilder('holding')
       .select('DISTINCT holding.symbol', 'symbol')
       .where('holding.symbol IS NOT NULL')
-      .andWhere('holding.symbol != ""')
+      .andWhere('holding.symbol != \'\'')
       .getRawMany()
 
     return symbols.map(h => h.symbol).filter(Boolean)
@@ -87,18 +90,15 @@ export class StockQuoteCacheService {
    */
   async getQuote(symbol: string): Promise<CachedQuote | null> {
     const redis = getRedis()
-    if (!redis) {
-      // Fallback to direct API call if Redis not available
-      return this.quotes.getQuote(symbol)
-    }
-
     const cacheKey = `quote:${symbol}`
     
     try {
       // Try to get from cache first
-      const cached = await redis.get(cacheKey)
-      if (cached) {
-        return JSON.parse(cached)
+      if (redis) {
+        const cached = await redis.get(cacheKey)
+        if (cached) {
+          return JSON.parse(cached)
+        }
       }
     } catch (error) {
       this.logger.warn(`Failed to get cached quote for ${symbol}:`, error)
@@ -112,10 +112,29 @@ export class StockQuoteCacheService {
 
     try {
       this.incrementRequestCount()
-      const quote = await this.quotes.getQuote(symbol)
+      
+      // Use growwapi to get quote
+      const quoteResponse = await this.groww.liveData.getQuote({
+        tradingSymbol: symbol,
+        exchange: Exchange.NSE,
+        segment: Segment.CASH
+      })
+      
+      const quote: CachedQuote = {
+        symbol,
+        price: quoteResponse.lastPrice,
+        asOf: new Date().toISOString(),
+        source: 'groww',
+        open: quoteResponse.ohlc?.open,
+        high: quoteResponse.ohlc?.high,
+        low: quoteResponse.ohlc?.low,
+        prevClose: quoteResponse.ohlc?.close
+      }
       
       // Cache the quote
-      await redis.setex(cacheKey, this.CACHE_TTL / 1000, JSON.stringify(quote))
+      if (redis) {
+        await redis.setex(cacheKey, this.CACHE_TTL / 1000, JSON.stringify(quote))
+      }
       
       return quote
     } catch (error) {
@@ -160,7 +179,24 @@ export class StockQuoteCacheService {
 
         try {
           this.incrementRequestCount()
-          const quote = await this.quotes.getQuote(symbol)
+          
+          // Use growwapi to get quote
+          const quoteResponse = await this.groww.liveData.getQuote({
+            tradingSymbol: symbol,
+            exchange: Exchange.NSE,
+            segment: Segment.CASH
+          })
+          
+          const quote: CachedQuote = {
+            symbol,
+            price: quoteResponse.lastPrice,
+            asOf: new Date().toISOString(),
+            source: 'groww',
+            open: quoteResponse.ohlc?.open,
+            high: quoteResponse.ohlc?.high,
+            low: quoteResponse.ohlc?.low,
+            prevClose: quoteResponse.ohlc?.close
+          }
           
           // Cache the quote
           const redis = getRedis()
@@ -201,9 +237,26 @@ export class StockQuoteCacheService {
         break
       }
 
-      try {
+            try {
         this.incrementRequestCount()
-        const quote = await this.quotes.getQuote(symbol)
+        
+        // Use growwapi to get quote
+        const quoteResponse = await this.groww.liveData.getQuote({
+          tradingSymbol: symbol,
+          exchange: Exchange.NSE,
+          segment: Segment.CASH
+        })
+        
+        const quote: CachedQuote = {
+          symbol,
+          price: quoteResponse.lastPrice,
+          asOf: new Date().toISOString(),
+          source: 'groww',
+          open: quoteResponse.ohlc?.open,
+          high: quoteResponse.ohlc?.high,
+          low: quoteResponse.ohlc?.low,
+          prevClose: quoteResponse.ohlc?.close
+        }
         
         // Cache the quote
         const redis = getRedis()
@@ -213,7 +266,7 @@ export class StockQuoteCacheService {
         }
         
         updatedCount++
-                  this.logger.debug(`Updated quote for ${symbol}: ₹${quote.price}`)
+        this.logger.debug(`Updated quote for ${symbol}: ₹${quote.price}`)
       } catch (error) {
         this.logger.error(`Failed to update quote for ${symbol}:`, error)
       }

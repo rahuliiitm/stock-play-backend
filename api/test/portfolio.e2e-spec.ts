@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from './../src/app.module';
 
 describe('Portfolio Management (e2e)', () => {
@@ -18,7 +18,7 @@ describe('Portfolio Management (e2e)', () => {
 
     // Register a test user and get auth token
     const registerResponse = await request(app.getHttpServer())
-      .post('/auth/register')
+      .post('/users/signup')
       .send({
         email: 'test@example.com',
         password: 'testpassword123',
@@ -30,7 +30,7 @@ describe('Portfolio Management (e2e)', () => {
     } else {
       // Try to login if user already exists
       const loginResponse = await request(app.getHttpServer())
-        .post('/auth/login')
+        .post('/users/login')
         .send({
           email: 'test@example.com',
           password: 'testpassword123'
@@ -95,9 +95,8 @@ describe('Portfolio Management (e2e)', () => {
         });
 
       expect(response.status).toBe(201);
-      expect(response.body).toHaveProperty('id');
-      expect(response.body.symbol).toBe('RELIANCE');
-      expect(response.body.quantity).toBe('10');
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toBe('Stock added successfully');
     });
 
     it('should remove stock from portfolio', async () => {
@@ -115,7 +114,7 @@ describe('Portfolio Management (e2e)', () => {
   describe('Stock Data', () => {
     it('should get stock quote', async () => {
       const response = await request(app.getHttpServer())
-        .get('/stocks/quote/RELIANCE');
+        .get('/stocks/RELIANCE/quote');
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('symbol', 'RELIANCE');
@@ -125,12 +124,12 @@ describe('Portfolio Management (e2e)', () => {
 
     it('should get stock historical data', async () => {
       const response = await request(app.getHttpServer())
-        .get('/stocks/history/RELIANCE?interval=1M');
+        .get('/stocks/RELIANCE/history?intervalMinutes=1440');
 
       expect(response.status).toBe(200);
       expect(Array.isArray(response.body)).toBe(true);
       if (response.body.length > 0) {
-        expect(response.body[0]).toHaveProperty('timestamp');
+        expect(response.body[0]).toHaveProperty('time');
         expect(response.body[0]).toHaveProperty('open');
         expect(response.body[0]).toHaveProperty('high');
         expect(response.body[0]).toHaveProperty('low');
@@ -164,7 +163,7 @@ describe('Portfolio Management (e2e)', () => {
         .delete(`/v2/portfolios/${portfolioId}`)
         .set('Authorization', `Bearer ${authToken}`);
 
-      expect(response.status).toBe(204);
+      expect(response.status).toBe(200);
     });
   });
 });
