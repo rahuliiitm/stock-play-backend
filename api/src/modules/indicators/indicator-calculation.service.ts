@@ -2,12 +2,14 @@ import { Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Cron, CronExpression } from '@nestjs/schedule'
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter'
 import { IndicatorConfig } from './indicator-config.entity'
 import { IndicatorValue } from './indicator-value.entity'
 import { IndicatorProviderRegistryService } from './indicator-provider-registry.service'
 import { StockQuoteCacheService } from '../stocks/stock-quote-cache.service'
 import { QuotesService } from '../stocks/quotes.service'
 import { Candle } from '../../lib/market-data-sdk/models'
+import { TimeframeType } from '../trading/schemas/candle.schema'
 
 @Injectable()
 export class IndicatorCalculationService {
@@ -21,6 +23,7 @@ export class IndicatorCalculationService {
     private readonly providerRegistry: IndicatorProviderRegistryService,
     private readonly stockQuoteCache: StockQuoteCacheService,
     private readonly quotesService: QuotesService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   /**
@@ -244,15 +247,168 @@ export class IndicatorCalculationService {
   }
 
   /**
-   * Event listener for indicator calculations (replaces hourly scheduler)
+   * Event listener for trading candle aggregation completion
+   */
+  @OnEvent('trading.candleAggregated')
+  async onCandleAggregated(event: {
+    subscriptionId: string;
+    symbol: string;
+    timestamp: number;
+    price: number;
+    timeframes: TimeframeType[];
+  }) {
+    this.logger.debug(`Received candle aggregation event for ${event.symbol}`)
+    await this.calculateAllIndicatorsForSymbol(event.symbol)
+  }
+
+  /**
+   * Event listener for trading indicator update requests
+   */
+  @OnEvent('trading.indicatorUpdate')
+  async onIndicatorUpdate(event: {
+    symbol: string;
+    timestamp: number;
+    timeframes: TimeframeType[];
+  }) {
+    this.logger.debug(`Received indicator update request for ${event.symbol}`)
+    await this.calculateAllIndicatorsForSymbol(event.symbol)
+  }
+
+  /**
+   * Event listener for indicator calculations (legacy support)
    */
   async onIndicatorUpdateRequest(): Promise<void> {
-    this.logger.log('Received indicator calculation request via event')
+    this.logger.log('Received indicator calculation request via legacy method')
     await this.calculateAllIndicators()
   }
 
   /**
-   * Get historical data for indicator calculation
+   * Calculate indicators using trading module's aggregated candle data
+   */
+  async calculateIndicatorsWithTradingData(
+    symbol: string,
+    timeframes: TimeframeType[],
+    indicatorNames: string[] = []
+  ): Promise<IndicatorValue[]> {
+    const results: IndicatorValue[] = []
+
+    for (const timeframe of timeframes) {
+      try {
+        // Get candle data from trading module's aggregated data
+        const candles = await this.getTradingCandleData(symbol, timeframe)
+        if (!candles || candles.length === 0) {
+          this.logger.warn(`No trading candle data for ${symbol} on ${timeframe}`)
+          continue
+        }
+
+        // Get active indicator configs for this symbol and timeframe
+        const configs = await this.getIndicatorConfigsForTimeframe(symbol, timeframe, indicatorNames)
+
+        for (const config of configs) {
+          try {
+            const provider = this.providerRegistry.get(config.indicator_name)
+            if (!provider) continue
+
+            const result = provider.calculate(candles, config.parameters)
+            if (!result) continue
+
+            const indicatorValue = this.indicatorValues.create({
+              symbol,
+              indicator_name: config.indicator_name,
+              value: result.value,
+              additional_data: result.additionalData,
+              calculated_at: result.timestamp,
+              interval: timeframe,
+              lookback_period: provider.minDataPoints,
+              parameters_used: config.parameters
+            })
+
+            const savedValue = await this.indicatorValues.save(indicatorValue)
+            results.push(savedValue)
+
+            this.logger.debug(`Calculated ${config.indicator_name} for ${symbol} on ${timeframe}: ${result.value}`)
+
+          } catch (error) {
+            this.logger.error(`Error calculating ${config.indicator_name} for ${symbol} on ${timeframe}:`, error)
+          }
+        }
+
+      } catch (error) {
+        this.logger.error(`Error processing timeframe ${timeframe} for ${symbol}:`, error)
+      }
+    }
+
+    return results
+  }
+
+  /**
+   * Get candle data from trading module's aggregated data
+   */
+  private async getTradingCandleData(symbol: string, timeframe: TimeframeType): Promise<Candle[] | null> {
+    try {
+      // This would integrate with the trading module to get aggregated candle data
+      // For now, fall back to regular historical data
+      this.logger.debug(`Getting trading candle data for ${symbol} on ${timeframe}`)
+
+      // Calculate appropriate interval based on timeframe
+      const intervalMinutes = this.getIntervalMinutesForTimeframe(timeframe)
+      const minDataPoints = 50 // Default minimum data points
+
+      const endDate = new Date()
+      const startDate = new Date(endDate.getTime() - (minDataPoints * intervalMinutes * 60 * 1000))
+
+      const history = await this.quotesService.getHistory(symbol, startDate.toISOString(), endDate.toISOString(), intervalMinutes)
+
+      if (!history || history.length < 20) {
+        this.logger.warn(`Insufficient trading data for ${symbol} on ${timeframe}: ${history?.length || 0} candles`)
+        return null
+      }
+
+      return history
+    } catch (error) {
+      this.logger.error(`Error getting trading candle data for ${symbol} on ${timeframe}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Get indicator configs for a specific timeframe
+   */
+  private async getIndicatorConfigsForTimeframe(
+    symbol: string,
+    timeframe: TimeframeType,
+    indicatorNames: string[] = []
+  ): Promise<IndicatorConfig[]> {
+    const query = this.indicatorConfigs
+      .createQueryBuilder('config')
+      .where('config.symbol = :symbol', { symbol })
+      .andWhere('config.is_active = :isActive', { isActive: true })
+
+    if (indicatorNames.length > 0) {
+      query.andWhere('config.indicator_name IN (:...names)', { names: indicatorNames })
+    }
+
+    return query.getMany()
+  }
+
+  /**
+   * Convert timeframe to interval minutes for historical data
+   */
+  private getIntervalMinutesForTimeframe(timeframe: TimeframeType): number {
+    const intervals = {
+      '1m': 1,
+      '5m': 5,
+      '15m': 15,
+      '30m': 30,
+      '1h': 60,
+      '4h': 240,
+      '1d': 1440, // 24 * 60
+    }
+    return intervals[timeframe] || 1440
+  }
+
+  /**
+   * Get historical data for indicator calculation (legacy method)
    */
   private async getHistoricalData(symbol: string, minDataPoints: number): Promise<Candle[] | null> {
     try {
@@ -262,7 +418,7 @@ export class IndicatorCalculationService {
 
       // Get historical data using the existing quotes service
       const history = await this.quotesService.getHistory(symbol, startDate.toISOString(), endDate.toISOString(), 1440) // 1440 minutes = 1 day
-      
+
       if (!history || history.length < minDataPoints) {
         this.logger.warn(`Insufficient historical data for ${symbol}: ${history?.length || 0} candles, need ${minDataPoints}`)
         return null

@@ -2,6 +2,7 @@ import { Controller, Get, Post, Put, Delete, Param, Body, Query } from '@nestjs/
 import { IndicatorCalculationService } from './indicator-calculation.service'
 import { IndicatorConfig } from './indicator-config.entity'
 import { IndicatorValue } from './indicator-value.entity'
+import type { TimeframeType } from '../trading/schemas/candle.schema'
 
 @Controller('indicators')
 export class IndicatorsController {
@@ -92,5 +93,62 @@ export class IndicatorsController {
   async calculateAllIndicators() {
     await this.indicatorService.calculateAllIndicators()
     return { message: 'All indicators calculation started' }
+  }
+
+  // Supertrend-specific endpoints
+  @Post('supertrend/:symbol')
+  async calculateSupertrend(
+    @Param('symbol') symbol: string,
+    @Body() body: {
+      period?: number
+      multiplier?: number
+      timeframe?: TimeframeType
+    } = {}
+  ) {
+    const { period = 10, multiplier = 3, timeframe } = body
+
+    if (timeframe) {
+      // Calculate using trading module's data for specific timeframe
+      const results = await this.indicatorService.calculateIndicatorsWithTradingData(
+        symbol,
+        [timeframe],
+        ['SUPERTREND']
+      )
+      return results.length > 0 ? results[0] : { message: 'No Supertrend data calculated' }
+    } else {
+      // Calculate using regular historical data
+      return this.indicatorService.calculateIndicator(symbol, 'SUPERTREND', {
+        period,
+        multiplier
+      })
+    }
+  }
+
+  // Trading module integration endpoints
+  @Post('trading/:symbol')
+  async calculateIndicatorsWithTradingData(
+    @Param('symbol') symbol: string,
+    @Body() body: {
+      timeframes: TimeframeType[]
+      indicatorNames?: string[]
+    }
+  ) {
+    const { timeframes, indicatorNames = [] } = body
+    return this.indicatorService.calculateIndicatorsWithTradingData(symbol, timeframes, indicatorNames)
+  }
+
+  @Get('trading/:symbol/:timeframe/:indicatorName')
+  async getTradingIndicatorValue(
+    @Param('symbol') symbol: string,
+    @Param('timeframe') timeframe: TimeframeType,
+    @Param('indicatorName') indicatorName: string
+  ) {
+    // Get the latest indicator value for the specific timeframe
+    // This would need to be implemented in the service to filter by timeframe
+    const latestValue = await this.indicatorService.getLatestIndicatorValue(symbol, indicatorName)
+    if (latestValue && latestValue.interval === timeframe) {
+      return latestValue
+    }
+    return { message: `No ${indicatorName} data found for ${symbol} on ${timeframe} timeframe` }
   }
 }
