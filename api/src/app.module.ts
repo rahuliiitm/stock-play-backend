@@ -12,6 +12,8 @@ import { EngagementModule } from './modules/engagement/engagement.module'
 import { IndicatorsModule } from './modules/indicators/indicators.module'
 import { UsersModule } from './modules/users/users.module'
 import { TradingModule } from './modules/trading/trading.module'
+import { StrategyModule } from './modules/strategy/strategy.module'
+import { BrokerModule } from './modules/broker/broker.module'
 // MarketDataModule will be added later
 // import { MarketDataModule } from './modules/market-data/market-data.module'
 
@@ -40,6 +42,8 @@ import { TradingModule } from './modules/trading/trading.module'
     IndicatorsModule,
     UsersModule,
     TradingModule,
+    StrategyModule,
+    BrokerModule,
     // MarketDataModule,
   ],
   controllers: [AppController],
