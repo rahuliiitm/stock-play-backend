@@ -15,9 +15,10 @@ import { Holding } from '../../entities/Holding.entity'
 import { QuotesService } from './quotes.service'
 import { StocksController } from './stocks.controller'
 import { StockQuoteCacheService } from './stock-quote-cache.service'
+import { BrokerModule } from '../broker/broker.module'
 
 @Module({
-  imports: [HttpModule, JwtModule.register({}), TypeOrmModule.forFeature([StockSymbol, Holding])],
+  imports: [HttpModule, JwtModule.register({}), TypeOrmModule.forFeature([StockSymbol, Holding]), BrokerModule],
   providers: [
     QuotesService,
     IndicatorsService,

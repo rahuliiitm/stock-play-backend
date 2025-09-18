@@ -2442,19 +2442,88 @@ Pre-built strategy templates for common patterns:
 │  Market Data    │ -> │  Worker Thread   │ -> │  Phase Engine    │
 │  (Redis Pub)    │    │  (Strategy)      │    │  (Path/Rule)     │
 └─────────────────┘    └──────────────────┘    └──────────────────┘
-                                                        │
-                                                        ▼
+                                                       │
+                                                       ▼
 ┌─────────────────┐    ┌──────────────────┐    ┌──────────────────┐
-│  Signal Gen     │ -> │  Risk Check      │ -> │  Order Exec      │
-│  (Entry/Exit)   │    │  (Validation)    │    │  (Groww API)     │
+│  Signal Gen     │ -> │  Strike Select   │ -> │  Risk Check      │
+│  (Entry/Exit)   │    │  (Expiry/Strike) │    │  (Validation)    │
 └─────────────────┘    └──────────────────┘    └──────────────────┘
-                                                        │
-                                                        ▼
+                                                       │
+                                                       ▼
 ┌─────────────────┐    ┌──────────────────┐    ┌──────────────────┐
-│  Position       │ -> │  Monitor         │ -> │  Phase           │
-│  Management     │    │  (PnL/SL)       │    │  Transition      │
+│  Order Exec     │ -> │  Position        │ -> │  Monitor         │
+│  (Groww API)    │    │  Management      │    │  (PnL/SL)       │
+└─────────────────┘    └──────────────────┘    └──────────────────┘
+                                                       │
+                                                       ▼
+┌─────────────────┐    ┌──────────────────┐    ┌──────────────────┐
+│  Phase          │ -> │  Performance     │ -> │  Reporting       │
+│  Transition     │    │  Tracking        │    │  (Analytics)     │
 └─────────────────┘    └──────────────────┘    └──────────────────┘
 ```
+
+### **Strike Selection Phase** ⭐ **NEW FEATURE**
+
+#### **Purpose**
+The Strike Selection Phase intelligently selects optimal strike prices and expiry dates for options strategies based on configurable rules and market timing.
+
+#### **Key Components**
+- **Expiry Logic**: Day-based expiry selection
+- **Strike Calculation**: ATM/OTM/ITM with rounding
+- **Hedge Management**: Automatic hedge strike calculation
+- **Validation**: Risk and market condition checks
+
+#### **Day-Based Expiry Rules**
+```typescript
+// Friday to Monday: Current week expiry
+const currentWeekDays = ['FRIDAY', 'SATURDAY', 'SUNDAY', 'MONDAY'];
+
+// Tuesday to Thursday: Next week expiry
+const nextWeekDays = ['TUESDAY', 'WEDNESDAY', 'THURSDAY'];
+
+// Example: Tuesday signal → Next Thursday expiry
+// Friday signal → Current Thursday expiry
+```
+
+#### **Configuration Structure**
+```typescript
+interface StrikeSelectionConfig {
+  type: 'ATM' | 'OTM' | 'ITM';
+  optionType: 'CALL' | 'PUT';
+  expirySelection: {
+    logic: 'DAY_BASED' | 'ALWAYS_CURRENT' | 'ALWAYS_NEXT';
+    currentWeekDays: string[];
+    nextWeekDays: string[];
+  };
+  strikeRounding: {
+    enabled: boolean;
+    roundTo: number;  // NIFTY: 100
+    mode: 'NEAREST' | 'UP' | 'DOWN';
+  };
+  hedgeStrikeOffset: number;
+}
+```
+
+#### **Example: NIFTY Weekly Options**
+```typescript
+const niftyStrikeConfig = {
+  type: 'ATM',
+  optionType: 'PUT',
+  expirySelection: {
+    logic: 'DAY_BASED',
+    currentWeekDays: ['FRIDAY', 'SATURDAY', 'SUNDAY', 'MONDAY'],
+    nextWeekDays: ['TUESDAY', 'WEDNESDAY', 'THURSDAY']
+  },
+  strikeRounding: { enabled: true, roundTo: 100, mode: 'NEAREST' },
+  hedgeStrikeOffset: 100
+};
+```
+
+#### **Integration Points**
+- **Path-Based**: Visual workflow node for strike selection
+- **Rule-Based**: Conditional logic for strike validation
+- **API Endpoints**: RESTful testing and configuration
+- **Worker Threads**: Isolated processing per strategy
 
 ## 🎨 **Configuration Options**
 

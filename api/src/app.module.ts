@@ -7,8 +7,6 @@ import { AppService } from './app.service'
 import { StocksModule } from './modules/stocks/stocks.module'
 import { PortfolioModule } from './modules/portfolio/portfolio.module'
 import { TasksModule } from './modules/tasks/tasks.module'
-import { LeaderboardModule } from './modules/leaderboard/leaderboard.module'
-import { EngagementModule } from './modules/engagement/engagement.module'
 import { IndicatorsModule } from './modules/indicators/indicators.module'
 import { UsersModule } from './modules/users/users.module'
 import { TradingModule } from './modules/trading/trading.module'
@@ -37,8 +35,6 @@ import { BrokerModule } from './modules/broker/broker.module'
     StocksModule,
     PortfolioModule,
     TasksModule,
-    LeaderboardModule,
-    EngagementModule,
     IndicatorsModule,
     UsersModule,
     TradingModule,

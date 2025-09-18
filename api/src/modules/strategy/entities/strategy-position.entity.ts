@@ -46,10 +46,10 @@ export class StrategyPosition {
   @Column({ type: 'varchar', length: 10, default: 'OPEN' })
   status: PositionStatus
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   entryTime: Date
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   closedAt: Date
 
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })

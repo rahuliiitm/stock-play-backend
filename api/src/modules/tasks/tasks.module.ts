@@ -1,8 +1,6 @@
 import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { ScheduleModule } from '@nestjs/schedule'
-import { LeaderboardModule } from '../leaderboard/leaderboard.module'
-import { LeaderboardRefreshService } from './leaderboard-refresh.service'
 import { StockPriceHistory } from '../../entities/StockPriceHistory.entity'
 
 import { PortfolioV2 } from '../../entities/PortfolioV2.entity'
@@ -23,11 +21,10 @@ import { SymbolsJobsService } from './symbols-jobs.service'
       Holding, 
       PortfolioSnapshotV2
     ]),
-    LeaderboardModule,
     PortfolioModule,
     StocksModule,
   ],
-  providers: [LeaderboardRefreshService, PortfolioJobsService, SymbolsJobsService],
-  exports: [LeaderboardRefreshService, PortfolioJobsService, SymbolsJobsService],
+  providers: [PortfolioJobsService, SymbolsJobsService],
+  exports: [PortfolioJobsService, SymbolsJobsService],
 })
 export class TasksModule {} 

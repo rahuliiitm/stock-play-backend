@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common'
+import Redis from 'ioredis'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { ConfigModule } from '@nestjs/config'
 
@@ -28,7 +29,14 @@ import { BrokerController } from './controllers/broker.controller'
   ],
   providers: [
     GrowwApiService,
-    OrderService
+    OrderService,
+    {
+      provide: 'REDIS_CLIENT',
+      useFactory: (): Redis => {
+        const url = process.env.REDIS_URL || `redis://${process.env.REDIS_HOST || 'localhost'}:${process.env.REDIS_PORT || '6379'}`
+        return new Redis(url)
+      },
+    },
   ],
   exports: [
     GrowwApiService,

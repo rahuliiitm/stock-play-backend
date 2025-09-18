@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { BrokerAccount } from '../../entities/BrokerAccount.entity'
 import { BrokerToken } from '../../entities/BrokerToken.entity'
-import { GrowwAPI, Exchange, Segment } from 'growwapi'
+import { GrowwApiService } from '../broker/services/groww-api.service'
 
 
 
@@ -18,16 +18,13 @@ export interface BrokerSyncResult {
 export class BrokerService {
   private readonly logger = new Logger(BrokerService.name)
 
-  private readonly groww: GrowwAPI
-
   constructor(
     @InjectRepository(BrokerAccount)
     private readonly brokerAccounts: Repository<BrokerAccount>,
     @InjectRepository(BrokerToken)
     private readonly brokerTokens: Repository<BrokerToken>,
-  ) {
-    this.groww = new GrowwAPI()
-  }
+    private readonly growwApiService: GrowwApiService,
+  ) {}
 
   async linkGrowwAccount(
     userId: string,
@@ -236,7 +233,7 @@ export class BrokerService {
   private async fetchGrowwHoldings(accessToken: string): Promise<any[]> {
     // Use growwapi to fetch holdings
     try {
-      const holdings = await this.groww.holdings.list()
+      const holdings = await this.growwApiService.getHoldings()
       return holdings || []
     } catch (error) {
       this.logger.error('Failed to fetch holdings from Groww:', error)
@@ -274,11 +271,7 @@ export class BrokerService {
 
     // Use growwapi to get orders
     try {
-      const orders = await this.groww.orders.getOrders({
-        page: 1,
-        pageSize: 50,
-        segment: Segment.CASH
-      })
+      const orders = await this.growwApiService.getOrders()
       return orders || []
     } catch (error) {
       this.logger.error('Failed to fetch orders from Groww:', error)
@@ -297,7 +290,7 @@ export class BrokerService {
 
     // Use growwapi to get margin details
     try {
-      const margin = await this.groww.margins.details()
+      const margin = await this.growwApiService.getMargins()
       return margin
     } catch (error) {
       this.logger.error('Failed to fetch margin from Groww:', error)
@@ -308,9 +301,8 @@ export class BrokerService {
   async searchGrowwInstruments(query: string): Promise<any[]> {
     // Use growwapi to search instruments
     try {
-      const instructions = await this.groww.instructions.getFilteredInstructions({
-        search: query
-      })
+      // TODO: Implement instrument search in GrowwApiService
+      const instructions = [] // Placeholder until searchInstruments is implemented
       return instructions || []
     } catch (error) {
       this.logger.error('Failed to search instruments from Groww:', error)

@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { getRedis } from '../../../lib/redis';
-import { GrowwAPI, Exchange, Segment } from 'growwapi';
+import { GrowwApiService } from '../../broker/services/groww-api.service';
 import {
   TimeframeType,
   REDIS_KEYS,
@@ -29,7 +29,6 @@ export interface SubscriptionConfig {
 @Injectable()
 export class LiveDataFeedService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(LiveDataFeedService.name);
-  private growwApi: GrowwAPI;
   private subscriptions: Map<string, SubscriptionConfig> = new Map();
   private updateIntervals: Map<string, NodeJS.Timeout> = new Map();
   private readonly DEFAULT_UPDATE_INTERVAL = 60000; // 1 minute
@@ -37,9 +36,8 @@ export class LiveDataFeedService implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     private eventEmitter: EventEmitter2,
-  ) {
-    this.growwApi = new GrowwAPI();
-  }
+    private growwApiService: GrowwApiService,
+  ) {}
 
   async onModuleInit() {
     this.logger.log('Live Data Feed Service initialized');
@@ -146,17 +144,13 @@ export class LiveDataFeedService implements OnModuleInit, OnModuleDestroy {
     for (const symbol of config.symbols) {
       try {
         // Fetch live quote from Groww API
-        const quote = await this.growwApi.liveData.getQuote({
-          tradingSymbol: symbol,
-          exchange: Exchange.NSE,
-          segment: Segment.CASH,
-        });
+        const quote = await this.growwApiService.getQuote(symbol);
 
         const candleData: LiveCandleData = {
           symbol,
           timestamp: Date.now(),
-          price: quote.lastPrice,
-          volume: quote.volume || 0,
+          price: Number(quote?.ltp || quote?.price || 0),
+          volume: quote?.volume || 0,
           exchange: 'NSE',
           segment: 'CASH',
         };

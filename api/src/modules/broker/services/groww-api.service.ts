@@ -5,9 +5,11 @@ import { Redis } from 'ioredis'
 import { Inject } from '@nestjs/common'
 
 export interface GrowwCredentials {
-  email: string
-  password: string
+  email?: string
+  password?: string
   totpSecret?: string
+  apiKey?: string
+  apiSecret?: string
 }
 
 export interface GrowwAuthResponse {
@@ -50,23 +52,73 @@ export interface GrowwPosition {
 export class GrowwApiService {
   private readonly logger = new Logger(GrowwApiService.name)
   private readonly httpClient: AxiosInstance
-  private readonly API_BASE_URL = 'https://groww.in/v1/api'
+  private readonly API_BASE_URL = 'https://api.groww.in'
   private accessToken: string | null = null
   private refreshToken: string | null = null
   private tokenExpiry: Date | null = null
 
+  /**
+   * Static method to get access token (similar to Python SDK's GrowwAPI.get_access_token)
+   * Usage: const accessToken = await GrowwApiService.getAccessToken(apiKey, apiSecret)
+   */
+  static async getAccessToken(apiKey: string, apiSecret: string): Promise<string> {
+    const crypto = await import('crypto')
+    const axios = await import('axios')
+    
+    // Generate checksum as per Groww API documentation
+    const timestamp = Math.floor(Date.now() / 1000).toString()
+    const input = apiSecret + timestamp
+    const checksum = crypto.createHash('sha256').update(input).digest('hex')
+    
+      const response = await axios.default.post(
+        'https://api.groww.in/v1/token/api/access',
+        {
+          key_type: 'approval',
+          checksum: checksum,
+          timestamp: timestamp
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+
+    return response.data.token
+  }
+
   constructor(
     private configService: ConfigService,
-    @Inject('REDIS_CLIENT') private redis: Redis
+    @Inject('REDIS_CLIENT') private redis: Redis,
+    accessToken?: string
   ) {
     this.httpClient = axios.create({
       baseURL: this.API_BASE_URL,
       timeout: 30000, // 30 seconds
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-API-VERSION': '1.0',
         'User-Agent': 'StockPlay-Trading/1.0'
       }
     })
+
+    // If access token is provided, set it immediately (similar to Python SDK initialization)
+    if (accessToken) {
+      this.accessToken = accessToken
+      this.httpClient.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
+      
+      // Calculate expiry (tokens expire at 6AM every day as per documentation)
+      const now = new Date()
+      const tomorrow6AM = new Date(now)
+      tomorrow6AM.setDate(tomorrow6AM.getDate() + 1)
+      tomorrow6AM.setHours(6, 0, 0, 0)
+      this.tokenExpiry = tomorrow6AM
+      
+      this.logger.log('✅ GrowwApiService initialized with access token')
+      this.logger.log(`Token expires at: ${this.tokenExpiry.toISOString()}`)
+    }
 
     // Add response interceptor for error handling
     this.httpClient.interceptors.response.use(
@@ -84,7 +136,7 @@ export class GrowwApiService {
   }
 
   /**
-   * Authenticate with Groww API
+   * Authenticate with Groww API using API key or username/password
    */
   async authenticate(credentials?: GrowwCredentials): Promise<boolean> {
     try {
@@ -94,6 +146,124 @@ export class GrowwApiService {
         throw new Error('Groww credentials not provided')
       }
 
+      // Try direct access token first
+      if (creds.apiKey === 'direct_token') {
+        this.logger.log('✅ Using direct access token authentication')
+        return true
+      }
+
+      // Try API key authentication (Groww API Key + Secret Flow)
+      if (creds.apiKey && creds.apiSecret) {
+        return await this.authenticateWithApiKey(creds.apiKey, creds.apiSecret)
+      }
+
+      // Fallback to username/password authentication
+      if (creds.email && creds.password) {
+        return await this.authenticateWithCredentials(creds)
+      }
+
+      throw new Error('No valid authentication method provided')
+
+    } catch (error) {
+      this.logger.error('❌ Groww authentication failed:', error.message)
+      return false
+    }
+  }
+
+  /**
+   * Get access token using API key and secret (similar to Python SDK's get_access_token)
+   * This is the TypeScript equivalent of: GrowwAPI.get_access_token(api_key=api_key, secret=secret)
+   */
+  async getAccessToken(apiKey: string, apiSecret: string): Promise<string> {
+    try {
+      this.logger.log('🔑 Getting access token using API key and secret...')
+      
+      // Generate checksum as per Groww API documentation
+      const timestamp = Math.floor(Date.now() / 1000).toString()
+      const checksum = await this.generateChecksum(apiSecret, timestamp)
+      
+      const response: AxiosResponse<any> = await this.httpClient.post(
+        '/v1/token/api/access',
+        {
+          key_type: 'approval',
+          checksum: checksum,
+          timestamp: timestamp
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+
+      const authData = response.data
+      const accessToken = authData.token
+      
+      this.logger.log('✅ Access token obtained successfully')
+      this.logger.log(`Token Ref ID: ${authData.tokenRefId}`)
+      this.logger.log(`Session Name: ${authData.sessionName}`)
+      this.logger.log(`Expires At: ${authData.expiry}`)
+      this.logger.log(`Is Active: ${authData.isActive}`)
+
+      return accessToken
+
+    } catch (error) {
+      this.logger.error('❌ Failed to get access token:', error.message)
+      if (error.response) {
+        this.logger.error('Response data:', error.response.data)
+      }
+      throw new Error(`Failed to get access token: ${error.message}`)
+    }
+  }
+
+  /**
+   * Authenticate using API key and secret (Groww API Key + Secret Flow)
+   * This is the TypeScript equivalent of: growwapi = GrowwAPI(access_token)
+   */
+  private async authenticateWithApiKey(apiKey: string, apiSecret: string): Promise<boolean> {
+    try {
+      this.logger.log('Attempting Groww API key authentication...')
+      
+      // Get access token (similar to Python SDK)
+      const accessToken = await this.getAccessToken(apiKey, apiSecret)
+      
+      // Set the access token for this instance (similar to Python SDK initialization)
+      this.accessToken = accessToken
+      
+      // Calculate expiry (tokens expire at 6AM every day as per documentation)
+      const now = new Date()
+      const tomorrow6AM = new Date(now)
+      tomorrow6AM.setDate(tomorrow6AM.getDate() + 1)
+      tomorrow6AM.setHours(6, 0, 0, 0)
+      this.tokenExpiry = tomorrow6AM
+
+      // Cache tokens in Redis
+      await this.cacheTokens({
+        access_token: accessToken,
+        refresh_token: '', // Not provided in this flow
+        token_type: 'Bearer',
+        expires_in: Math.floor((this.tokenExpiry.getTime() - Date.now()) / 1000)
+      })
+
+      // Set authorization header for future requests
+      this.httpClient.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
+
+      this.logger.log('✅ Groww API key authentication successful')
+      this.logger.log(`Token expires at: ${this.tokenExpiry.toISOString()}`)
+      return true
+
+    } catch (error) {
+      this.logger.error('❌ Groww API key authentication failed:', error.message)
+      return false
+    }
+  }
+
+  /**
+   * Authenticate using username/password
+   */
+  private async authenticateWithCredentials(creds: GrowwCredentials): Promise<boolean> {
+    try {
       // Generate TOTP if secret is provided
       let totpCode: string | undefined
       if (creds.totpSecret) {
@@ -106,7 +276,7 @@ export class GrowwApiService {
         ...(totpCode && { totp: totpCode })
       }
 
-      this.logger.log('Attempting Groww authentication...')
+      this.logger.log('Attempting Groww username/password authentication...')
       const response: AxiosResponse<GrowwAuthResponse> = await this.httpClient.post(
         '/user/login',
         loginPayload
@@ -126,36 +296,48 @@ export class GrowwApiService {
       // Set authorization header for future requests
       this.httpClient.defaults.headers.common['Authorization'] = `${authData.token_type} ${authData.access_token}`
 
-      this.logger.log('✅ Groww authentication successful')
+      this.logger.log('✅ Groww username/password authentication successful')
       return true
 
     } catch (error) {
-      this.logger.error('❌ Groww authentication failed:', error.message)
+      this.logger.error('❌ Groww username/password authentication failed:', error.message)
       return false
     }
   }
 
   /**
-   * Place an order
+   * Place an order using official Groww API
    */
   async placeOrder(order: GrowwOrder): Promise<GrowwOrderResponse> {
     await this.ensureAuthenticated()
 
     try {
-      const orderPayload = this.formatOrderPayload(order)
-
       this.logger.log(`📋 Placing ${order.side} order for ${order.symbol}`, {
         quantity: order.quantity,
         orderType: order.orderType,
         productType: order.productType
       })
 
-      const response = await this.httpClient.post('/orders/place', orderPayload)
+      const orderPayload = {
+        trading_symbol: order.symbol,
+        quantity: order.quantity,
+        price: order.price || 0,
+        trigger_price: order.triggerPrice || 0,
+        validity: order.orderValidity || 'DAY',
+        exchange: 'NSE',
+        segment: 'CASH',
+        product: order.productType,
+        order_type: order.orderType,
+        transaction_type: order.side,
+        order_reference_id: `ORD${Date.now().toString().slice(-8)}${Math.random().toString(36).substr(2, 4).toUpperCase()}`
+      }
+
+      const response = await this.httpClient.post('/v1/order/create', orderPayload)
 
       const orderResponse: GrowwOrderResponse = {
-        orderId: response.data.orderId || response.data.id,
-        status: response.data.status || 'PENDING',
-        message: response.data.message
+        orderId: response.data.payload.groww_order_id,
+        status: response.data.payload.order_status,
+        message: response.data.payload.remark
       }
 
       this.logger.log(`✅ Order placed successfully: ${orderResponse.orderId}`)
@@ -168,22 +350,33 @@ export class GrowwApiService {
   }
 
   /**
-   * Modify an existing order
+   * Modify an existing order using official Groww API
    */
   async modifyOrder(orderId: string, modifications: Partial<GrowwOrder>): Promise<GrowwOrderResponse> {
     await this.ensureAuthenticated()
 
     try {
-      const modifyPayload = this.formatOrderPayload(modifications)
+      this.logger.log(`📝 Modifying order ${orderId}`, modifications)
 
-      this.logger.log(`🔧 Modifying order ${orderId}`)
-      const response = await this.httpClient.put(`/orders/${orderId}`, modifyPayload)
-
-      return {
-        orderId,
-        status: response.data.status || 'MODIFIED',
-        message: response.data.message
+      const modifyPayload = {
+        groww_order_id: orderId,
+        segment: 'CASH',
+        quantity: modifications.quantity,
+        price: modifications.price,
+        trigger_price: modifications.triggerPrice,
+        order_type: modifications.orderType
       }
+
+      const response = await this.httpClient.post('/v1/order/modify', modifyPayload)
+
+      const orderResponse: GrowwOrderResponse = {
+        orderId: response.data.payload.groww_order_id,
+        status: response.data.payload.order_status,
+        message: 'Order modified successfully'
+      }
+
+      this.logger.log(`✅ Order modified successfully: ${orderResponse.orderId}`)
+      return orderResponse
 
     } catch (error) {
       this.logger.error(`❌ Failed to modify order ${orderId}:`, error.message)
@@ -192,20 +385,29 @@ export class GrowwApiService {
   }
 
   /**
-   * Cancel an order
+   * Cancel an order using official Groww API
    */
   async cancelOrder(orderId: string): Promise<GrowwOrderResponse> {
     await this.ensureAuthenticated()
 
     try {
       this.logger.log(`❌ Cancelling order ${orderId}`)
-      const response = await this.httpClient.delete(`/orders/${orderId}`)
-
-      return {
-        orderId,
-        status: 'CANCELLED',
-        message: response.data.message
+      
+      const cancelPayload = {
+        segment: 'CASH',
+        groww_order_id: orderId
       }
+
+      const response = await this.httpClient.post('/v1/order/cancel', cancelPayload)
+
+      const orderResponse: GrowwOrderResponse = {
+        orderId: response.data.payload.groww_order_id,
+        status: response.data.payload.order_status,
+        message: 'Order cancelled successfully'
+      }
+
+      this.logger.log(`✅ Order cancelled successfully: ${orderResponse.orderId}`)
+      return orderResponse
 
     } catch (error) {
       this.logger.error(`❌ Failed to cancel order ${orderId}:`, error.message)
@@ -214,17 +416,73 @@ export class GrowwApiService {
   }
 
   /**
-   * Get order status
+   * Get order details using official Groww API
    */
-  async getOrderStatus(orderId: string): Promise<any> {
+  async getOrderDetails(orderId: string): Promise<any> {
     await this.ensureAuthenticated()
 
     try {
-      const response = await this.httpClient.get(`/orders/${orderId}`)
-      return response.data
+      this.logger.log(`📋 Getting order details for ${orderId}`)
+      
+      const response = await this.httpClient.get(`/v1/order/detail/${orderId}`, {
+        params: { segment: 'CASH' }
+      })
+      
+      this.logger.log(`✅ Order details retrieved for ${orderId}`)
+      return response.data.payload
     } catch (error) {
-      this.logger.error(`❌ Failed to get order status for ${orderId}:`, error.message)
-      throw new Error(`Failed to get order status: ${error.message}`)
+      this.logger.error(`❌ Failed to get order details for ${orderId}:`, error.message)
+      throw new Error(`Failed to get order details: ${error.message}`)
+    }
+  }
+
+  /**
+   * Get order list using official Groww API
+   */
+  async getOrderList(page: number = 0, pageSize: number = 50): Promise<any> {
+    await this.ensureAuthenticated()
+
+    try {
+      this.logger.log(`📋 Getting order list - page ${page}, size ${pageSize}`)
+      
+      const response = await this.httpClient.get('/v1/order/list', {
+        params: { 
+          segment: 'CASH',
+          page: page,
+          page_size: pageSize
+        }
+      })
+      
+      this.logger.log(`✅ Order list retrieved - ${response.data.payload?.orders?.length || 0} orders`)
+      return response.data.payload
+    } catch (error) {
+      this.logger.error(`❌ Failed to get order list:`, error.message)
+      throw new Error(`Failed to get order list: ${error.message}`)
+    }
+  }
+
+  /**
+   * Get trades for an order using official Groww API
+   */
+  async getOrderTrades(orderId: string, page: number = 0, pageSize: number = 50): Promise<any> {
+    await this.ensureAuthenticated()
+
+    try {
+      this.logger.log(`📋 Getting trades for order ${orderId}`)
+      
+      const response = await this.httpClient.get(`/v1/order/trades/${orderId}`, {
+        params: { 
+          segment: 'CASH',
+          page: page,
+          page_size: pageSize
+        }
+      })
+      
+      this.logger.log(`✅ Trades retrieved for order ${orderId} - ${response.data.payload?.trade_list?.length || 0} trades`)
+      return response.data.payload
+    } catch (error) {
+      this.logger.error(`❌ Failed to get trades for order ${orderId}:`, error.message)
+      throw new Error(`Failed to get order trades: ${error.message}`)
     }
   }
 
@@ -246,22 +504,23 @@ export class GrowwApiService {
 
   /**
    * Get current positions
+   * Based on: https://groww.in/trade-api/docs/curl/portfolio
    */
   async getPositions(): Promise<GrowwPosition[]> {
     await this.ensureAuthenticated()
 
     try {
-      const response = await this.httpClient.get('/portfolio/positions')
-      const positions = response.data.positions || response.data
+      const response = await this.httpClient.get('/v1/positions/user')
+      const positions = response.data.payload?.positions || []
 
       return positions.map(pos => ({
-        symbol: pos.symbol || pos.trading_symbol,
-        side: pos.side || (pos.quantity > 0 ? 'BUY' : 'SELL'),
+        symbol: pos.trading_symbol,
+        side: pos.quantity > 0 ? 'BUY' : 'SELL',
         quantity: Math.abs(pos.quantity),
-        averagePrice: pos.average_price || pos.avg_price,
-        currentPrice: pos.current_price || pos.ltp,
-        pnl: pos.pnl || pos.unrealized_pnl,
-        productType: pos.product_type || pos.productType
+        averagePrice: pos.net_price || pos.net_carry_forward_price,
+        currentPrice: undefined, // Not provided in positions API
+        pnl: undefined, // Not provided in positions API
+        productType: pos.product
       }))
 
     } catch (error) {
@@ -271,14 +530,47 @@ export class GrowwApiService {
   }
 
   /**
+   * Get position for a specific trading symbol
+   * Based on: https://groww.in/trade-api/docs/curl/portfolio
+   */
+  async getPositionForSymbol(tradingSymbol: string, segment: string = 'CASH'): Promise<GrowwPosition[]> {
+    await this.ensureAuthenticated()
+
+    try {
+      const response = await this.httpClient.get('/v1/positions/trading-symbol', {
+        params: {
+          trading_symbol: tradingSymbol,
+          segment: segment
+        }
+      })
+      const positions = response.data.payload?.positions || []
+
+      return positions.map(pos => ({
+        symbol: pos.trading_symbol,
+        side: pos.quantity > 0 ? 'BUY' : 'SELL',
+        quantity: Math.abs(pos.quantity),
+        averagePrice: pos.net_price || pos.net_carry_forward_price,
+        currentPrice: undefined, // Not provided in positions API
+        pnl: undefined, // Not provided in positions API
+        productType: pos.product
+      }))
+
+    } catch (error) {
+      this.logger.error(`❌ Failed to get position for ${tradingSymbol}:`, error.message)
+      throw new Error(`Failed to get position for symbol: ${error.message}`)
+    }
+  }
+
+  /**
    * Get portfolio holdings
+   * Based on: https://groww.in/trade-api/docs/curl/portfolio
    */
   async getHoldings(): Promise<any[]> {
     await this.ensureAuthenticated()
 
     try {
-      const response = await this.httpClient.get('/portfolio/holdings')
-      return response.data.holdings || response.data
+      const response = await this.httpClient.get('/v1/holdings/user')
+      return response.data.payload?.holdings || []
     } catch (error) {
       this.logger.error('❌ Failed to get holdings:', error.message)
       throw new Error(`Failed to get holdings: ${error.message}`)
@@ -286,29 +578,116 @@ export class GrowwApiService {
   }
 
   /**
-   * Get account balance/margins
+   * Get Last Traded Price (LTP) for multiple symbols
+   */
+  async getLTP(symbols: string[]): Promise<any> {
+    await this.ensureAuthenticated()
+
+    try {
+      this.logger.log(`📈 Getting LTP for ${symbols.length} symbols`)
+      
+      const exchangeSymbols = symbols.map(symbol => `NSE_${symbol}`).join(',')
+      
+      const response = await this.httpClient.get('/v1/live-data/ltp', {
+        params: {
+          segment: 'CASH',
+          exchange_symbols: exchangeSymbols
+        }
+      })
+      
+      this.logger.log(`✅ LTP received for ${symbols.length} symbols`)
+      return response.data.payload
+    } catch (error) {
+      this.logger.error('❌ Failed to get LTP:', error.message)
+      throw new Error(`Failed to get LTP: ${error.message}`)
+    }
+  }
+
+  /**
+   * Get OHLC data for multiple symbols
+   */
+  async getOHLC(symbols: string[]): Promise<any> {
+    await this.ensureAuthenticated()
+
+    try {
+      this.logger.log(`📊 Getting OHLC for ${symbols.length} symbols`)
+      
+      const exchangeSymbols = symbols.map(symbol => `NSE_${symbol}`).join(',')
+      
+      const response = await this.httpClient.get('/v1/live-data/ohlc', {
+        params: {
+          segment: 'CASH',
+          exchange_symbols: exchangeSymbols
+        }
+      })
+      
+      this.logger.log(`✅ OHLC received for ${symbols.length} symbols`)
+      return response.data.payload
+    } catch (error) {
+      this.logger.error('❌ Failed to get OHLC:', error.message)
+      throw new Error(`Failed to get OHLC: ${error.message}`)
+    }
+  }
+
+  /**
+   * Get available user margin details using official Groww API
    */
   async getMargins(): Promise<any> {
     await this.ensureAuthenticated()
 
     try {
-      const response = await this.httpClient.get('/user/margins')
-      return response.data
+      this.logger.log('💰 Getting user margin details')
+      
+      const response = await this.httpClient.get('/v1/margins/detail/user')
+      
+      this.logger.log('✅ User margin details received')
+      return response.data.payload
     } catch (error) {
-      this.logger.error('❌ Failed to get margins:', error.message)
-      throw new Error(`Failed to get margins: ${error.message}`)
+      this.logger.error('❌ Failed to get user margins:', error.message)
+      throw new Error(`Failed to get user margins: ${error.message}`)
     }
   }
 
   /**
-   * Get live quote for a symbol
+   * Calculate required margin for orders using official Groww API
+   */
+  async calculateRequiredMargin(orders: any[], segment: string = 'CASH'): Promise<any> {
+    await this.ensureAuthenticated()
+
+    try {
+      this.logger.log(`💰 Calculating required margin for ${orders.length} orders`)
+      
+      const response = await this.httpClient.post(`/v1/margins/detail/orders?segment=${segment}`, orders)
+      
+      this.logger.log('✅ Required margin calculated')
+      return response.data.payload
+    } catch (error) {
+      this.logger.error('❌ Failed to calculate required margin:', error.message)
+      throw new Error(`Failed to calculate required margin: ${error.message}`)
+    }
+  }
+
+
+  /**
+   * Get live quote for a symbol using official Groww API
    */
   async getQuote(symbol: string): Promise<any> {
     await this.ensureAuthenticated()
 
     try {
-      const response = await this.httpClient.get(`/market/quote/${symbol}`)
-      return response.data
+      this.logger.log(`📈 Getting quote for ${symbol}`)
+      
+      const response = await this.httpClient.get('/v1/live-data/quote', {
+        params: {
+          exchange: 'NSE',
+          segment: 'CASH',
+          trading_symbol: symbol
+        }
+      })
+      
+      const quote = response.data.payload
+      this.logger.log(`✅ Quote received for ${symbol}: ₹${quote.last_price}`)
+      return quote
     } catch (error) {
       this.logger.error(`❌ Failed to get quote for ${symbol}:`, error.message)
       throw new Error(`Failed to get quote: ${error.message}`)
@@ -316,21 +695,42 @@ export class GrowwApiService {
   }
 
   /**
-   * Get historical data (for backtesting)
+   * Get historical data using official Groww API
    */
   async getHistoricalData(symbol: string, fromDate: string, toDate: string, interval: string = '1D'): Promise<any[]> {
     await this.ensureAuthenticated()
 
     try {
-      const params = {
-        symbol,
-        from_date: fromDate,
-        to_date: toDate,
-        interval
+      this.logger.log(`📊 Getting historical data for ${symbol} from ${fromDate} to ${toDate}`)
+      
+      // Convert interval to minutes (1D = 1440 minutes)
+      const intervalMap: { [key: string]: string } = {
+        '1D': '1440',
+        '1H': '60',
+        '4H': '240',
+        '1W': '10080',
+        '1M': '1',
+        '5M': '5',
+        '15M': '15',
+        '30M': '30'
       }
-
-      const response = await this.httpClient.get('/market/historical', { params })
-      return response.data.candles || response.data
+      
+      const intervalMinutes = intervalMap[interval] || '1440'
+      
+      const response = await this.httpClient.get('/v1/historical/candle/bulk', {
+        params: {
+          exchange: 'NSE',
+          segment: 'CASH',
+          groww_symbol: `NSE-${symbol}`,
+          start_time: fromDate,
+          end_time: toDate,
+          interval_in_minutes: intervalMinutes
+        }
+      })
+      
+      const candles = response.data.payload?.candles || []
+      this.logger.log(`✅ Historical data received for ${symbol}: ${candles.length} candles`)
+      return candles
     } catch (error) {
       this.logger.error(`❌ Failed to get historical data for ${symbol}:`, error.message)
       throw new Error(`Failed to get historical data: ${error.message}`)
@@ -341,6 +741,15 @@ export class GrowwApiService {
    * Private helper methods
    */
   private async ensureAuthenticated(): Promise<void> {
+    // If an access token is provided via env, prefer it
+    const envAccessToken = this.configService.get<string>('GROWW_ACCESS_TOKEN')
+    if (envAccessToken) {
+      this.accessToken = envAccessToken
+      this.tokenExpiry = new Date(Date.now() + 55 * 60 * 1000) // assume ~55m validity
+      this.httpClient.defaults.headers.common['Authorization'] = `Bearer ${this.accessToken}`
+      return
+    }
+
     // Check if token is still valid
     if (this.accessToken && this.tokenExpiry && this.tokenExpiry > new Date()) {
       // Token is still valid
@@ -369,23 +778,61 @@ export class GrowwApiService {
     const email = this.configService.get<string>('GROWW_EMAIL')
     const password = this.configService.get<string>('GROWW_PASSWORD')
     const totpSecret = this.configService.get<string>('GROWW_TOTP_SECRET')
+    const apiKey = this.configService.get<string>('GROWW_API_KEY')
+    const apiSecret = this.configService.get<string>('GROWW_API_SECRET')
+    const accessToken = this.configService.get<string>('GROWW_ACCESS_TOKEN')
 
-    if (!email || !password) {
-      return null
+    // Prioritize direct access token (Groww Access Token approach)
+    if (accessToken) {
+      this.accessToken = accessToken
+      this.tokenExpiry = new Date(Date.now() + 55 * 60 * 1000) // Assume ~55m validity
+      this.httpClient.defaults.headers.common['Authorization'] = accessToken
+      return { apiKey: 'direct_token' } // Special flag for direct token usage
     }
 
-    return {
-      email,
-      password,
-      totpSecret
+    // Try API key authentication (Groww API Key + Secret Flow)
+    if (apiKey && apiSecret && apiKey !== 'your_actual_api_key_from_groww_execute_page') {
+      return {
+        apiKey,
+        apiSecret
+      }
     }
+
+    // Fallback to username/password
+    if (email && password) {
+      return {
+        email,
+        password,
+        totpSecret
+      }
+    }
+
+    return null
   }
 
   private async generateTOTP(secret: string): Promise<string> {
-    // This would use the otplib library
-    // For now, return a placeholder
-    this.logger.warn('TOTP generation not implemented - using placeholder')
-    return '123456' // Placeholder
+    try {
+      const { authenticator } = await import('otplib')
+      return authenticator.generate(secret)
+    } catch (e) {
+      this.logger.error('Failed to generate TOTP:', (e as any)?.message)
+      throw e
+    }
+  }
+
+  /**
+   * Generate checksum for Groww API authentication
+   * Based on: https://groww.in/trade-api/docs/curl
+   */
+  private async generateChecksum(secret: string, timestamp: string): Promise<string> {
+    try {
+      const crypto = await import('crypto')
+      const input = secret + timestamp
+      return crypto.createHash('sha256').update(input).digest('hex')
+    } catch (e) {
+      this.logger.error('Failed to generate checksum:', (e as any)?.message)
+      throw e
+    }
   }
 
   private formatOrderPayload(order: Partial<GrowwOrder>): any {

@@ -20,6 +20,11 @@ import { TransactionsService } from './transactions.service'
 import { JwtAuthGuard } from '../auth/jwt.guard'
 import { TransactionType } from '../../entities/PortfolioTransactionV2.entity'
 import { PortfolioValueUpdateService } from './portfolio-value-update.service'
+import { StrategyRunnerService } from '../strategy/services/strategy-runner.service'
+import { StrategyConfig } from '../strategy/interfaces/strategy-config.interface'
+import { Strategy } from '../strategy/entities/strategy.entity'
+import { InjectRepository } from '@nestjs/typeorm'
+import { Repository } from 'typeorm'
 
 class CreatePortfolioDto {
   name!: string
@@ -59,6 +64,9 @@ export class PortfolioV2Controller {
     private readonly holdingsService: HoldingsService,
     private readonly transactionsService: TransactionsService,
     private readonly portfolioValueUpdate: PortfolioValueUpdateService,
+    private readonly strategyRunnerService: StrategyRunnerService,
+    @InjectRepository(Strategy)
+    private readonly strategyRepository: Repository<Strategy>,
   ) {}
 
   @Post()
@@ -335,6 +343,177 @@ export class PortfolioV2Controller {
 
     await this.portfolioValueUpdate.updatePublicPortfolioValues()
     return { message: 'Public portfolio values updated successfully' }
+  }
+
+  // Automation endpoints
+  @Post(':portfolioId/automation/start')
+  async startStrategy(
+    @Req() req: any,
+    @Param('portfolioId') portfolioId: string,
+    @Query('symbol') symbol: string,
+  ) {
+    if (!symbol) {
+      throw new HttpException('Symbol is required to start a strategy', HttpStatus.BAD_REQUEST)
+    }
+
+    // Check if user owns the portfolio
+    const portfolios = await this.portfolioService.getUserPortfolios(req.user.sub)
+    const portfolio = portfolios.find(p => p.id === portfolioId)
+
+    if (!portfolio) {
+      throw new HttpException('Portfolio not found', HttpStatus.NOT_FOUND)
+    }
+
+    // Generate a simple SMA crossover strategy for the given symbol
+    const strategyConfig: StrategyConfig = {
+      id: `sma-crossover-${portfolioId}-${symbol}`,
+      name: `SMA Crossover for ${symbol} (${portfolio.name})`,
+      description: `Automated SMA 50/200 crossover strategy for portfolio ${portfolioId}`,
+      underlyingSymbol: symbol,
+      timeframe: '1D',
+      maxConcurrentPositions: 1,
+      riskManagement: {
+        maxLossPerTrade: 0.02, // 2% of position value
+        maxDailyLoss: 0.05, // 5% of portfolio value
+        maxDrawdown: 0.10, // 10% of portfolio value
+        positionSizePercent: 0.10, // 10% of available capital
+      },
+      indicators: [
+        {
+          name: 'sma50',
+          type: 'SMA',
+          parameters: { period: 50 },
+          timeframe: '1D',
+        },
+        {
+          name: 'sma200',
+          type: 'SMA',
+          parameters: { period: 200 },
+          timeframe: '1D',
+        },
+      ],
+      entryConditions: [
+        {
+          id: 'sma-crossover-buy',
+          name: 'SMA 50 crosses above SMA 200',
+          type: 'PARALLEL',
+          conditions: [
+            {
+              type: 'INDICATOR_COMPARISON',
+              operator: 'GT',
+              leftOperand: 'sma50',
+              rightOperand: 'sma200',
+            },
+          ],
+        },
+      ],
+      exitConditions: [
+        {
+          id: 'sma-crossover-sell',
+          name: 'SMA 50 crosses below SMA 200',
+          type: 'SIGNAL_BASED',
+          condition: {
+            type: 'INDICATOR_COMPARISON',
+            operator: 'LT',
+            leftOperand: 'sma50',
+            rightOperand: 'sma200',
+          },
+          priority: 1,
+        },
+        {
+          id: 'stop-loss',
+          name: 'Stop Loss',
+          type: 'STOP_LOSS',
+          condition: {
+            type: 'PRICE_CONDITION',
+            operator: 'LT',
+            leftOperand: 'current_price',
+            rightOperand: 'entry_price * (1 - riskManagement.maxLossPerTrade)',
+          },
+          priority: 2,
+        },
+      ],
+      orderConfig: {
+        orderType: 'MARKET',
+        quantity: 1, // Placeholder, should be calculated based on positionSizePercent
+        productType: 'CNC',
+      },
+    }
+
+    // Save the strategy to the database
+    let strategy = await this.strategyRepository.findOne({ where: { id: strategyConfig.id } })
+    if (strategy) {
+      // Update existing strategy
+      strategy.config = strategyConfig
+      strategy.isActive = true
+      await this.strategyRepository.save(strategy)
+    } else {
+      // Create new strategy
+      strategy = this.strategyRepository.create({
+        id: strategyConfig.id,
+        name: strategyConfig.name,
+        description: strategyConfig.description,
+        isActive: true,
+        configType: 'RULE_BASED',
+        underlyingSymbol: strategyConfig.underlyingSymbol,
+        assetType: 'STOCK',
+        timeframe: strategyConfig.timeframe as any,
+        config: strategyConfig,
+        riskManagement: strategyConfig.riskManagement,
+      })
+      await this.strategyRepository.save(strategy)
+    }
+
+    // Start the strategy runner
+    const started = await this.strategyRunnerService.startStrategy(strategyConfig)
+
+    if (started) {
+      return { success: true, message: `Strategy ${strategyConfig.id} started`, strategyId: strategyConfig.id }
+    } else {
+      throw new HttpException(`Failed to start strategy ${strategyConfig.id}`, HttpStatus.INTERNAL_SERVER_ERROR)
+    }
+  }
+
+  @Post(':portfolioId/automation/stop')
+  async stopStrategy(@Req() req: any, @Param('portfolioId') portfolioId: string) {
+    // Check if user owns the portfolio
+    const portfolios = await this.portfolioService.getUserPortfolios(req.user.sub)
+    const portfolio = portfolios.find(p => p.id === portfolioId)
+
+    if (!portfolio) {
+      throw new HttpException('Portfolio not found', HttpStatus.NOT_FOUND)
+    }
+
+    // Assuming strategy ID is derived from portfolio ID
+    const strategyId = `sma-crossover-${portfolioId}-RELIANCE` // Need to make this dynamic
+    const stopped = await this.strategyRunnerService.stopStrategy(strategyId)
+
+    if (stopped) {
+      // Mark strategy as inactive in DB
+      const strategy = await this.strategyRepository.findOne({ where: { id: strategyId } })
+      if (strategy) {
+        strategy.isActive = false
+        await this.strategyRepository.save(strategy)
+      }
+      return { success: true, message: `Strategy ${strategyId} stopped`, strategyId }
+    } else {
+      throw new HttpException(`Failed to stop strategy ${strategyId}`, HttpStatus.INTERNAL_SERVER_ERROR)
+    }
+  }
+
+  @Get(':portfolioId/automation/status')
+  async getStrategyStatus(@Req() req: any, @Param('portfolioId') portfolioId: string) {
+    // Check if user owns the portfolio
+    const portfolios = await this.portfolioService.getUserPortfolios(req.user.sub)
+    const portfolio = portfolios.find(p => p.id === portfolioId)
+
+    if (!portfolio) {
+      throw new HttpException('Portfolio not found', HttpStatus.NOT_FOUND)
+    }
+
+    const strategyId = `sma-crossover-${portfolioId}-RELIANCE` // Need to make this dynamic
+    const status = this.strategyRunnerService.getStrategyStatus(strategyId)
+    return { success: true, status, strategyId }
   }
 }
 

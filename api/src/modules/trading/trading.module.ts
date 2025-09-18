@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { BrokerModule } from '../broker/broker.module';
 
 // Import all candle entities
 import {
@@ -35,6 +36,8 @@ import { TradingController } from './controllers/trading.controller';
     ]),
     // Event emitter for trading events
     EventEmitterModule.forRoot(),
+    // Broker module for GrowwApiService
+    BrokerModule,
   ],
   controllers: [TradingController],
   providers: [

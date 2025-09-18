@@ -4,7 +4,7 @@ import { Repository } from 'typeorm'
 import { Cron, CronExpression } from '@nestjs/schedule'
 import { Holding } from '../../entities/Holding.entity'
 import { getRedis } from '../../lib/redis'
-import { GrowwAPI, Exchange, Segment } from 'growwapi'
+import { GrowwApiService } from '../broker/services/groww-api.service'
 
 interface CachedQuote {
   symbol: string
@@ -26,13 +26,10 @@ export class StockQuoteCacheService {
   private requestCount = 0
   private lastResetTime = Date.now()
 
-  private readonly groww: GrowwAPI
-
   constructor(
     @InjectRepository(Holding) private readonly holdings: Repository<Holding>,
-  ) {
-    this.groww = new GrowwAPI()
-  }
+    private readonly growwApiService: GrowwApiService,
+  ) {}
 
   /**
    * Get all unique symbols from all portfolios
@@ -113,22 +110,18 @@ export class StockQuoteCacheService {
     try {
       this.incrementRequestCount()
       
-      // Use growwapi to get quote
-      const quoteResponse = await this.groww.liveData.getQuote({
-        tradingSymbol: symbol,
-        exchange: Exchange.NSE,
-        segment: Segment.CASH
-      })
+      // Use GrowwApiService to get quote
+      const quoteResponse = await this.growwApiService.getQuote(symbol)
       
       const quote: CachedQuote = {
         symbol,
-        price: quoteResponse.lastPrice,
+        price: Number(quoteResponse?.ltp || quoteResponse?.price || 0),
         asOf: new Date().toISOString(),
         source: 'groww',
-        open: quoteResponse.ohlc?.open,
-        high: quoteResponse.ohlc?.high,
-        low: quoteResponse.ohlc?.low,
-        prevClose: quoteResponse.ohlc?.close
+        open: quoteResponse?.ohlc?.open,
+        high: quoteResponse?.ohlc?.high,
+        low: quoteResponse?.ohlc?.low,
+        prevClose: quoteResponse?.ohlc?.close
       }
       
       // Cache the quote
@@ -180,22 +173,18 @@ export class StockQuoteCacheService {
         try {
           this.incrementRequestCount()
           
-          // Use growwapi to get quote
-          const quoteResponse = await this.groww.liveData.getQuote({
-            tradingSymbol: symbol,
-            exchange: Exchange.NSE,
-            segment: Segment.CASH
-          })
+          // Use GrowwApiService to get quote
+          const quoteResponse = await this.growwApiService.getQuote(symbol)
           
           const quote: CachedQuote = {
             symbol,
-            price: quoteResponse.lastPrice,
+            price: Number(quoteResponse?.ltp || quoteResponse?.price || 0),
             asOf: new Date().toISOString(),
             source: 'groww',
-            open: quoteResponse.ohlc?.open,
-            high: quoteResponse.ohlc?.high,
-            low: quoteResponse.ohlc?.low,
-            prevClose: quoteResponse.ohlc?.close
+            open: quoteResponse?.ohlc?.open,
+            high: quoteResponse?.ohlc?.high,
+            low: quoteResponse?.ohlc?.low,
+            prevClose: quoteResponse?.ohlc?.close
           }
           
           // Cache the quote
@@ -240,22 +229,18 @@ export class StockQuoteCacheService {
             try {
         this.incrementRequestCount()
         
-        // Use growwapi to get quote
-        const quoteResponse = await this.groww.liveData.getQuote({
-          tradingSymbol: symbol,
-          exchange: Exchange.NSE,
-          segment: Segment.CASH
-        })
+        // Use GrowwApiService to get quote
+        const quoteResponse = await this.growwApiService.getQuote(symbol)
         
         const quote: CachedQuote = {
           symbol,
-          price: quoteResponse.lastPrice,
+          price: Number(quoteResponse?.ltp || quoteResponse?.price || 0),
           asOf: new Date().toISOString(),
           source: 'groww',
-          open: quoteResponse.ohlc?.open,
-          high: quoteResponse.ohlc?.high,
-          low: quoteResponse.ohlc?.low,
-          prevClose: quoteResponse.ohlc?.close
+          open: quoteResponse?.ohlc?.open,
+          high: quoteResponse?.ohlc?.high,
+          low: quoteResponse?.ohlc?.low,
+          prevClose: quoteResponse?.ohlc?.close
         }
         
         // Cache the quote

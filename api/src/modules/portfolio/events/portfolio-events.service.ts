@@ -44,11 +44,6 @@ export interface PortfolioSnapshotCreatedEvent {
   timestamp: Date
 }
 
-export interface LeaderboardUpdatedEvent {
-  window: string
-  processed: number
-  timestamp: Date
-}
 
 @Injectable()
 export class PortfolioEventsService {
@@ -109,16 +104,6 @@ export class PortfolioEventsService {
     await this.eventEmitter.emitAsync('portfolio.snapshot.created', fullEvent)
   }
 
-  // Leaderboard events
-  async emitLeaderboardUpdated(event: Omit<LeaderboardUpdatedEvent, 'timestamp'>): Promise<void> {
-    const fullEvent: LeaderboardUpdatedEvent = {
-      ...event,
-      timestamp: new Date(),
-    }
-
-    this.logger.debug(`Emitting leaderboard.updated event: ${JSON.stringify(fullEvent)}`)
-    await this.eventEmitter.emitAsync('leaderboard.updated', fullEvent)
-  }
 
   // Broker events
   async emitBrokerAccountLinked(userId: string, brokerAccountId: string, broker: string): Promise<void> {

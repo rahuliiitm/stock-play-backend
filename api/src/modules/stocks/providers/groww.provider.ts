@@ -1,15 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { QuotesProvider, QuoteResult, CandleResult } from './provider.interface'
-import { GrowwAPI, Exchange, Segment } from 'growwapi'
+import { GrowwApiService } from '../../broker/services/groww-api.service'
 
 @Injectable()
 export class GrowwProvider implements QuotesProvider {
   private readonly logger = new Logger(GrowwProvider.name)
-  private readonly groww: GrowwAPI
 
-  constructor() {
-    this.groww = new GrowwAPI()
-  }
+  constructor(private readonly groww: GrowwApiService) {}
 
   private baseUrl() {
     return process.env.GROWW_API_BASE || 'https://api.groww.in'
@@ -38,21 +35,16 @@ export class GrowwProvider implements QuotesProvider {
   async getQuote(symbol: string): Promise<QuoteResult> {
     const s = this.mapSymbol(symbol)
     try {
-      const quote = await this.groww.liveData.getQuote({
-        tradingSymbol: s,
-        exchange: Exchange.NSE,
-        segment: Segment.CASH
-      })
-      
+      const data = await this.groww.getQuote(s)
       return {
         symbol: s,
-        price: quote.lastPrice,
+        price: Number(data?.ltp || data?.price || 0),
         asOf: new Date().toISOString(),
         source: 'groww',
-        open: quote.ohlc?.open,
-        high: quote.ohlc?.high,
-        low: quote.ohlc?.low,
-        prevClose: quote.ohlc?.close,
+        open: data?.ohlc?.open,
+        high: data?.ohlc?.high,
+        low: data?.ohlc?.low,
+        prevClose: data?.ohlc?.close,
       }
     } catch (e: any) {
       const msg = e?.message || 'unknown error'
@@ -66,23 +58,23 @@ export class GrowwProvider implements QuotesProvider {
     try {
       const fromDate = from ? new Date(from) : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
       const toDate = to ? new Date(to) : new Date()
-      
-      const historicalData = await this.groww.historicData.get({
-        tradingSymbol: s,
-        exchange: Exchange.NSE,
-        segment: Segment.CASH,
-        startTime: fromDate.toISOString(),
-        endTime: toDate.toISOString()
-      })
-      
-      return historicalData.candles?.map((candle: any) => ({
-        time: candle.time || candle.timestamp || new Date().toISOString(),
-        open: candle.open || 0,
-        high: candle.high || 0,
-        low: candle.low || 0,
-        close: candle.close || 0,
-        volume: candle.volume || 0
-      })) || []
+      const interval = intervalMinutes && intervalMinutes <= 60 ? '1m' : '1D'
+
+      const candles = await this.groww.getHistoricalData(
+        s,
+        fromDate.toISOString(),
+        toDate.toISOString(),
+        interval,
+      )
+
+      return (candles || []).map((candle: any) => ({
+        time: candle.time || candle.timestamp || candle[0] || new Date().toISOString(),
+        open: candle.open || candle[1] || 0,
+        high: candle.high || candle[2] || 0,
+        low: candle.low || candle[3] || 0,
+        close: candle.close || candle[4] || 0,
+        volume: candle.volume || candle[5] || 0,
+      }))
     } catch (e: any) {
       const msg = e?.message || 'unknown error'
       this.logger.error(`Groww history error for ${s}: ${msg}`)

@@ -6,7 +6,6 @@ import type {
   HoldingAddedEvent,
   HoldingRemovedEvent,
   PortfolioSnapshotCreatedEvent,
-  LeaderboardUpdatedEvent,
 } from './portfolio-events.service'
 
 @Injectable()
@@ -67,16 +66,6 @@ export class PortfolioEventsListener {
     // - Send periodic performance notifications
   }
 
-  @OnEvent('leaderboard.updated')
-  async handleLeaderboardUpdated(event: LeaderboardUpdatedEvent): Promise<void> {
-    this.logger.log(`Leaderboard updated for ${event.window} window: ${event.processed} portfolios processed`)
-
-    // TODO: Implement additional actions:
-    // - Send notifications to users about rank changes
-    // - Update user achievements/badges
-    // - Generate leaderboard reports
-    // - Cache leaderboard data for faster access
-  }
 
   @OnEvent('broker.account.linked')
   async handleBrokerAccountLinked(event: any): Promise<void> {

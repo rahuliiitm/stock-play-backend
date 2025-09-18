@@ -82,27 +82,6 @@ export class CreatePortfolioV2Entities1756096298000 implements MigrationInterfac
             CREATE UNIQUE INDEX "IDX_portfolio_snapshots_v2_portfolio_date" ON "portfolio_snapshots_v2" ("portfolio_id", "date")
         `);
 
-        // Create leaderboard_entries table
-        await queryRunner.query(`
-            CREATE TABLE "leaderboard_entries" (
-                "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
-                "portfolio_id" uuid NOT NULL,
-                "window" varchar(8) NOT NULL,
-                "rank" int NOT NULL,
-                "return_percent" decimal(8,4) NOT NULL,
-                "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-                "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-                CONSTRAINT "PK_leaderboard_entries" PRIMARY KEY ("id")
-            )
-        `);
-
-        // Create indexes for leaderboard
-        await queryRunner.query(`
-            CREATE INDEX "IDX_leaderboard_entries_window_rank" ON "leaderboard_entries" ("window", "rank")
-        `);
-        await queryRunner.query(`
-            CREATE UNIQUE INDEX "IDX_leaderboard_entries_portfolio_window" ON "leaderboard_entries" ("portfolio_id", "window")
-        `);
 
         // Add foreign key constraints
         await queryRunner.query(`
@@ -129,16 +108,10 @@ export class CreatePortfolioV2Entities1756096298000 implements MigrationInterfac
             FOREIGN KEY ("portfolio_id") REFERENCES "portfolios_v2"("id") ON DELETE CASCADE ON UPDATE NO ACTION
         `);
 
-        await queryRunner.query(`
-            ALTER TABLE "leaderboard_entries"
-            ADD CONSTRAINT "FK_leaderboard_entries_portfolio_id"
-            FOREIGN KEY ("portfolio_id") REFERENCES "portfolios_v2"("id") ON DELETE CASCADE ON UPDATE NO ACTION
-        `);
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
         // Drop tables in reverse order (due to foreign key constraints)
-        await queryRunner.query(`DROP TABLE "leaderboard_entries"`);
         await queryRunner.query(`DROP TABLE "portfolio_snapshots_v2"`);
         await queryRunner.query(`DROP TABLE "portfolio_transactions_v2"`);
         await queryRunner.query(`DROP TABLE "holdings"`);

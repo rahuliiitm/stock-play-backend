@@ -1,6 +1,8 @@
 import { Module, OnModuleDestroy } from '@nestjs/common'
+import Redis from 'ioredis'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { ConfigModule } from '@nestjs/config'
+import { BrokerModule } from '../broker/broker.module'
 
 // Entities
 import { Strategy } from './entities/strategy.entity'
@@ -25,6 +27,7 @@ import { StrategyManagementController } from './controllers/strategy-management.
 @Module({
   imports: [
     ConfigModule,
+    BrokerModule,
     TypeOrmModule.forFeature([
       Strategy,
       StrategyRuntimeState,
@@ -44,7 +47,14 @@ import { StrategyManagementController } from './controllers/strategy-management.
     StrategyRecoveryService,
     StrategyWorkerManager,
     StrategyBuildingBlocksService,
-    StrategyRunnerService
+    StrategyRunnerService,
+    {
+      provide: 'REDIS_CLIENT',
+      useFactory: (): Redis => {
+        const url = process.env.REDIS_URL || `redis://${process.env.REDIS_HOST || 'localhost'}:${process.env.REDIS_PORT || '6379'}`
+        return new Redis(url)
+      },
+    },
   ],
   exports: [
     StrategyStatePersistenceService,

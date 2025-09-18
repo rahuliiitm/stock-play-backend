@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { Repository, Like, MoreThan } from 'typeorm'
 import { PortfolioV2 } from '../../entities/PortfolioV2.entity'
 import { User } from '../../entities/User.entity'
-import { LeaderboardService } from './leaderboard.service'
 import { PortfolioServiceV2 } from './portfolio-v2.service'
 
 export interface SearchFilters {
@@ -58,7 +57,6 @@ export class SearchService {
     private readonly portfolios: Repository<PortfolioV2>,
     @InjectRepository(User)
     private readonly users: Repository<User>,
-    private readonly leaderboardService: LeaderboardService,
     private readonly portfolioService: PortfolioServiceV2,
   ) {}
 
@@ -142,9 +140,6 @@ export class SearchService {
       portfolios.pop()
     }
 
-    // Get current leaderboard ranks for these portfolios
-    const portfolioIds = portfolios.map(p => p.id)
-    const leaderboardRanks = await this.getLeaderboardRanksForPortfolios(portfolioIds)
 
     const results: PortfolioSearchResult[] = portfolios.map(portfolio => {
       const metrics = {
@@ -153,8 +148,6 @@ export class SearchService {
         pnlCents: 0,
       }
 
-      // Get rank for this portfolio (default to weekly)
-      const rank = leaderboardRanks.get(portfolio.id)?.get('WEEKLY')
 
       return {
         id: portfolio.id,
@@ -167,7 +160,6 @@ export class SearchService {
           username: portfolio.user?.email,
           displayName: portfolio.user?.display_name,
         },
-        rank,
       }
     })
 
@@ -261,43 +253,43 @@ export class SearchService {
   }
 
   async getPopularPortfolios(limit = 10): Promise<PortfolioSearchResult[]> {
-    // Get portfolios with highest weekly returns
-    const leaderboard = await this.leaderboardService.getLeaderboard({
-      window: 'WEEKLY',
-      limit,
-      includePrivate: false,
-    })
-
-    const portfolioIds = leaderboard.map(l => l.portfolioId)
+    // Get portfolios with highest returns from recent snapshots
     const portfolios = await this.portfolios
       .createQueryBuilder('portfolio')
       .leftJoin('portfolio.user', 'user')
-      .where('portfolio.id IN (:...portfolioIds)', { portfolioIds })
+      .leftJoin(
+        subQuery => {
+          return subQuery
+            .select('portfolio_id', 'portfolio_id')
+            .addSelect('AVG(return_percent)', 'avgReturn')
+            .from('portfolio_snapshots_v2', 'snapshot')
+            .where('snapshot.date >= :startDate')
+            .groupBy('portfolio_id')
+        },
+        'metrics',
+        'portfolio.id = metrics.portfolio_id'
+      )
+      .where('portfolio.visibility = :visibility', { visibility: 'public' })
+      .orderBy('metrics.avgReturn', 'DESC')
+      .limit(limit)
       .getMany()
 
     const results: PortfolioSearchResult[] = portfolios.map(portfolio => {
-      const leaderboardEntry = leaderboard.find(l => l.portfolioId === portfolio.id)
-
       return {
         id: portfolio.id,
         name: portfolio.name,
         visibility: portfolio.visibility,
         createdAt: portfolio.created_at,
         metrics: {
-          returnPercent: leaderboardEntry?.returnPercent || 0,
-          marketValueCents: leaderboardEntry?.marketValueCents || 0,
-          pnlCents: leaderboardEntry?.pnlCents || 0,
+          returnPercent: 0,
+          marketValueCents: 0,
+          pnlCents: 0,
         },
         user: {
           id: portfolio.user_id,
           username: portfolio.user?.email,
           displayName: portfolio.user?.display_name,
         },
-        rank: leaderboardEntry ? {
-          window: 'WEEKLY',
-          position: leaderboardEntry.rank,
-          returnPercent: leaderboardEntry.returnPercent,
-        } : undefined,
       }
     })
 
@@ -332,34 +324,6 @@ export class SearchService {
     return [...userPortfolioResults, ...filteredPopular]
   }
 
-  private async getLeaderboardRanksForPortfolios(portfolioIds: string[]): Promise<Map<string, Map<string, any>>> {
-    const ranks = new Map<string, Map<string, any>>()
-
-    if (portfolioIds.length === 0) return ranks
-
-    const windows: ('DAILY' | 'WEEKLY' | 'MONTHLY')[] = ['DAILY', 'WEEKLY', 'MONTHLY']
-
-    for (const window of windows) {
-      const entries = await this.leaderboardService['leaderboardEntries']
-        .createQueryBuilder('entry')
-        .where('entry.portfolio_id IN (:...portfolioIds)', { portfolioIds })
-        .andWhere('entry.window = :window', { window })
-        .getMany()
-
-      for (const entry of entries) {
-        if (!ranks.has(entry.portfolio_id)) {
-          ranks.set(entry.portfolio_id, new Map())
-        }
-        ranks.get(entry.portfolio_id)!.set(window, {
-          window,
-          position: entry.rank,
-          returnPercent: entry.return_percent,
-        })
-      }
-    }
-
-    return ranks
-  }
 
   private async getTopPortfoliosForUsers(userIds: string[]): Promise<Map<string, any>> {
     const topPortfolios = new Map<string, any>()

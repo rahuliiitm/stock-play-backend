@@ -6,7 +6,7 @@ import { StockUniverseService } from './stock-universe.service'
 
 export class DataUpdateEvent {
   constructor(
-    public readonly type: 'quotes' | 'portfolio-values' | 'leaderboard' | 'indicators',
+    public readonly type: 'quotes' | 'portfolio-values' | 'indicators',
     public readonly timestamp: Date,
     public readonly data?: any
   ) {}
@@ -55,8 +55,6 @@ export class DataUpdateOrchestratorService {
       // Step 2: Emit event for portfolio value updates
       await this.triggerPortfolioValueUpdate()
 
-      // Step 3: Emit event for leaderboard updates
-      await this.triggerLeaderboardUpdate()
 
       // Step 4: Emit event for indicator calculations
       await this.triggerIndicatorCalculation()
@@ -104,15 +102,6 @@ export class DataUpdateOrchestratorService {
     this.eventEmitter.emit('data.portfolio-values.update', event)
   }
 
-  /**
-   * Trigger leaderboard update
-   */
-  private async triggerLeaderboardUpdate(): Promise<void> {
-    this.logger.log('Triggering leaderboard update...')
-    
-    const event = new DataUpdateEvent('leaderboard', new Date())
-    this.eventEmitter.emit('data.leaderboard.update', event)
-  }
 
   /**
    * Trigger indicator calculation

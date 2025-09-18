@@ -7,7 +7,6 @@ import { Holding } from '../../entities/Holding.entity'
 import { PortfolioSnapshotV2 } from '../../entities/PortfolioSnapshotV2.entity'
 import { PortfolioServiceV2 } from '../portfolio/portfolio-v2.service'
 import { QuotesService } from '../stocks/quotes.service'
-import { LeaderboardService } from '../leaderboard/leaderboard.service'
 import { Queue, Worker, JobsOptions } from 'bullmq'
 import { getRedis } from '../../lib/redis'
 
@@ -24,7 +23,6 @@ export class PortfolioJobsService implements OnModuleInit {
     @InjectRepository(PortfolioSnapshotV2) private readonly snapshots: Repository<PortfolioSnapshotV2>,
     private readonly portfolioSvc: PortfolioServiceV2,
     private readonly quotes: QuotesService,
-    private readonly leaderboard: LeaderboardService,
   ) {}
 
   async onModuleInit() {
@@ -97,7 +95,5 @@ export class PortfolioJobsService implements OnModuleInit {
       })
     )
 
-    // Update leaderboard
-    await this.leaderboard.updatePortfolioRank(data.portfolioId, returnPercent)
   }
 } 

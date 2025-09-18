@@ -8,58 +8,21 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common'
-import { LeaderboardService } from './leaderboard.service'
-import type { LeaderboardWindow } from './leaderboard.service'
 import { PortfolioServiceV2 } from './portfolio-v2.service'
 import { HoldingsService } from './holdings.service'
 import { SearchService } from './search.service'
 import { JwtAuthGuard } from '../auth/jwt.guard'
 import { OptionalJwtAuthGuard } from '../auth/optional-jwt.guard'
 
-class LeaderboardQueryDto {
-  window?: LeaderboardWindow = 'WEEKLY'
-  limit?: number = 50
-  offset?: number = 0
-  minReturnPercent?: number
-}
 
 @Controller('public')
 export class PublicController {
   constructor(
-    private readonly leaderboardService: LeaderboardService,
     private readonly portfolioService: PortfolioServiceV2,
     private readonly holdingsService: HoldingsService,
     private readonly searchService: SearchService,
   ) {}
 
-  @Get('leaderboard')
-  async getLeaderboard(@Query() query: LeaderboardQueryDto) {
-    const { window = 'WEEKLY', limit = 50, offset = 0, minReturnPercent } = query
-
-    if (limit > 100) {
-      throw new HttpException('Limit cannot exceed 100', HttpStatus.BAD_REQUEST)
-    }
-
-    const results = await this.leaderboardService.getLeaderboard({
-      window,
-      limit,
-      offset,
-      minReturnPercent,
-      includePrivate: false, // Never include private portfolios
-    })
-
-    return {
-      window,
-      results,
-      total: results.length,
-      hasMore: results.length === limit,
-    }
-  }
-
-  @Get('leaderboard/stats')
-  async getLeaderboardStats(@Query('window') window: LeaderboardWindow = 'WEEKLY') {
-    return this.leaderboardService.getLeaderboardStats(window)
-  }
 
   @Get('portfolios/:portfolioId')
   @UseGuards(OptionalJwtAuthGuard) // Allow both authenticated and anonymous access
@@ -101,24 +64,11 @@ export class PublicController {
     }
   }
 
-  @Get('portfolios/:portfolioId/rank')
-  async getPortfolioRank(
-    @Param('portfolioId') portfolioId: string,
-    @Query('window') window: LeaderboardWindow = 'WEEKLY'
-  ) {
-    const rank = await this.leaderboardService.getPortfolioRank(portfolioId, window)
-
-    if (!rank) {
-      throw new HttpException('Portfolio rank not found', HttpStatus.NOT_FOUND)
-    }
-
-    return rank
-  }
 
   @Get('portfolios/:portfolioId/performance')
   async getPortfolioPerformance(
     @Param('portfolioId') portfolioId: string,
-    @Query('window') window: LeaderboardWindow = 'MONTHLY'
+    @Query('window') window: string = 'MONTHLY'
   ) {
     // Check if portfolio is public
     const portfolios = await this.portfolioService.getUserPortfolios('')
@@ -128,7 +78,8 @@ export class PublicController {
       throw new HttpException('Portfolio not found', HttpStatus.NOT_FOUND)
     }
 
-    const history = await this.leaderboardService.getPortfolioPerformanceHistory(portfolioId, window)
+    // Return basic performance data without leaderboard
+    const history = []
 
     return {
       portfolioId,
@@ -204,16 +155,11 @@ export class PublicController {
 
   @Get('stats')
   async getPublicStats() {
-    const [dailyStats, weeklyStats, monthlyStats] = await Promise.all([
-      this.leaderboardService.getLeaderboardStats('DAILY'),
-      this.leaderboardService.getLeaderboardStats('WEEKLY'),
-      this.leaderboardService.getLeaderboardStats('MONTHLY'),
-    ])
-
+    // Return basic stats without leaderboard data
     return {
-      daily: dailyStats,
-      weekly: weeklyStats,
-      monthly: monthlyStats,
+      daily: { totalPortfolios: 0, averageReturn: 0 },
+      weekly: { totalPortfolios: 0, averageReturn: 0 },
+      monthly: { totalPortfolios: 0, averageReturn: 0 },
       lastUpdated: new Date(),
     }
   }
