@@ -91,18 +91,32 @@ export class BrokerAccountsService {
 
     // If API credentials are being updated, test them
     if (updates.apiKey && updates.apiSecret) {
-      const accessToken = await GrowwApiService.getAccessToken(updates.apiKey, updates.apiSecret)
-      
-      // Calculate token expiry
-      const now = new Date()
-      const tomorrow6AM = new Date(now)
-      tomorrow6AM.setDate(tomorrow6AM.getDate() + 1)
-      tomorrow6AM.setHours(6, 0, 0, 0)
+      try {
+        const accessToken = await GrowwApiService.getAccessToken(updates.apiKey, updates.apiSecret)
+        
+        // Calculate token expiry
+        const now = new Date()
+        const tomorrow6AM = new Date(now)
+        tomorrow6AM.setDate(tomorrow6AM.getDate() + 1)
+        tomorrow6AM.setHours(6, 0, 0, 0)
 
-      account.api_key = updates.apiKey
-      account.api_secret = updates.apiSecret
-      account.access_token = accessToken
-      account.token_expires_at = tomorrow6AM
+        account.api_key = updates.apiKey
+        account.api_secret = updates.apiSecret
+        account.access_token = accessToken
+        account.token_expires_at = tomorrow6AM
+        account.status = 'active'
+        
+        this.logger.log(`✅ API credentials validated successfully`)
+      } catch (error) {
+        this.logger.warn(`⚠️ Failed to validate API credentials: ${error.message}`)
+        this.logger.log(`Updating credentials without validation - will need to be validated later`)
+        
+        account.api_key = updates.apiKey
+        account.api_secret = updates.apiSecret
+        account.access_token = undefined
+        account.token_expires_at = undefined
+        account.status = 'pending_validation'
+      }
     }
 
     if (updates.isActive !== undefined) {

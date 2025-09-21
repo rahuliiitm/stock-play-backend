@@ -52,7 +52,7 @@ export class TransactionsService {
     }
 
     const transaction = this.transactions.create({
-      portfolio_id: portfolioId,
+      portfolioId: portfolioId,
       symbol,
       exchange,
       quantity_delta: quantityDelta ? String(quantityDelta) : null,
@@ -75,7 +75,7 @@ export class TransactionsService {
 
     let query = this.transactions
       .createQueryBuilder('t')
-      .where('t.portfolio_id = :portfolioId', { portfolioId })
+      .where('t.portfolioId = :portfolioId', { portfolioId })
       .orderBy('t.created_at', 'DESC')
 
     if (filter.type) {
@@ -106,7 +106,7 @@ export class TransactionsService {
 
     return transactions.map(t => ({
       id: t.id,
-      portfolioId: t.portfolio_id,
+      portfolioId: t.portfolioId,
       symbol: t.symbol,
       exchange: t.exchange,
       quantityDelta: t.quantity_delta ? Number(t.quantity_delta) : null,
@@ -123,7 +123,7 @@ export class TransactionsService {
 
     return {
       id: transaction.id,
-      portfolioId: transaction.portfolio_id,
+      portfolioId: transaction.portfolioId,
       symbol: transaction.symbol,
       exchange: transaction.exchange,
       quantityDelta: transaction.quantity_delta ? Number(transaction.quantity_delta) : null,
@@ -144,7 +144,7 @@ export class TransactionsService {
 
     return transactions.map(t => ({
       id: t.id,
-      portfolioId: t.portfolio_id,
+      portfolioId: t.portfolioId,
       symbol: t.symbol,
       exchange: t.exchange,
       quantityDelta: t.quantity_delta ? Number(t.quantity_delta) : null,
@@ -178,7 +178,7 @@ export class TransactionsService {
         'SUM(CASE WHEN t.type = \'WITHDRAW\' THEN 1 ELSE 0 END) as withdrawTransactions',
         'SUM(COALESCE(t.fees, 0)) as totalFees',
       ])
-      .where('t.portfolio_id = :portfolioId', { portfolioId })
+      .where('t.portfolioId = :portfolioId', { portfolioId })
       .getRawOne()
 
     return {
@@ -201,7 +201,7 @@ export class TransactionsService {
     // This is a simple check - in production you'd want more sophisticated validation
     const recentTransaction = await this.transactions
       .createQueryBuilder('t')
-      .where('t.portfolio_id = :portfolioId', { portfolioId: transaction.portfolio_id })
+      .where('t.portfolioId = :portfolioId', { portfolioId: transaction.portfolioId })
       .orderBy('t.created_at', 'DESC')
       .limit(1)
       .getOne()

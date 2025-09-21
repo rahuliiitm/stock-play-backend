@@ -204,7 +204,7 @@ export class ValuationService {
     }
 
     // Get portfolio holdings
-    const holdings = await this.holdings.find({ where: { portfolio_id: portfolioId } })
+    const holdings = await this.holdings.find({ where: { portfolioId: portfolioId } })
     if (holdings.length === 0) {
       const emptyValuation: PortfolioValuation = {
         marketValueCents: 0,
@@ -293,7 +293,7 @@ export class ValuationService {
     if (!valuation) return null
 
     const snapshot = this.snapshots.create({
-      portfolio_id: portfolioId,
+      portfolioId: portfolioId,
       date,
       market_value: valuation.marketValueCents,
       invested: valuation.investedCents,
@@ -307,7 +307,7 @@ export class ValuationService {
   async getPortfolioHistory(portfolioId: string, startDate?: Date, endDate?: Date): Promise<PortfolioSnapshotV2[]> {
     const query = this.snapshots
       .createQueryBuilder('snapshot')
-      .where('snapshot.portfolio_id = :portfolioId', { portfolioId })
+      .where('snapshot.portfolioId = :portfolioId', { portfolioId })
       .orderBy('snapshot.date', 'ASC')
 
     if (startDate) {

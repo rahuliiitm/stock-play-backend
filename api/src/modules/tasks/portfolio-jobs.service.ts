@@ -52,7 +52,7 @@ export class PortfolioJobsService implements OnModuleInit {
     if (!portfolio) return
 
     const asOf = new Date(data.asOfISO)
-    const holdings = await this.holdings.find({ where: { portfolio_id: data.portfolioId } })
+    const holdings = await this.holdings.find({ where: { portfolioId: data.portfolioId } })
     
     let totalValueCents = 0
     for (const holding of holdings) {
@@ -88,7 +88,7 @@ export class PortfolioJobsService implements OnModuleInit {
     // Create snapshot
     await this.snapshots.save(
       this.snapshots.create({
-        portfolio_id: data.portfolioId,
+        portfolioId: data.portfolioId,
         date: asOf,
         market_value: totalValueCents,
         return_percent: returnPercent,

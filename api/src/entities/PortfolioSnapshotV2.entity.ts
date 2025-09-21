@@ -2,13 +2,13 @@ import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, Primary
 import { PortfolioV2 } from './PortfolioV2.entity'
 
 @Entity('portfolio_snapshots_v2')
-@Index(['portfolio_id', 'date'], { unique: true })
+@Index(['portfolioId', 'date'], { unique: true })
 export class PortfolioSnapshotV2 {
   @PrimaryGeneratedColumn('uuid')
   id!: string
 
   @Column({ type: 'uuid' })
-  portfolio_id!: string
+  portfolioId!: string
 
   @Column({ type: 'date' })
   date!: Date
@@ -29,6 +29,6 @@ export class PortfolioSnapshotV2 {
   created_at!: Date
 
   @ManyToOne(() => PortfolioV2)
-  @JoinColumn({ name: 'portfolio_id' })
+  @JoinColumn({ name: 'portfolioId' })
   portfolio!: PortfolioV2
 }

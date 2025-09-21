@@ -265,7 +265,7 @@ export class PortfolioV2Controller {
 
     return {
       id: transaction.id,
-      portfolioId: transaction.portfolio_id,
+      portfolioId: transaction.portfolioId,
       symbol: transaction.symbol,
       exchange: transaction.exchange,
       quantityDelta: transaction.quantity_delta ? Number(transaction.quantity_delta) : null,

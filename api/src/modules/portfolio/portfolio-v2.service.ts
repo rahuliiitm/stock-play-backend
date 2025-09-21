@@ -123,7 +123,7 @@ export class PortfolioServiceV2 {
 
     // Create transaction
     const transaction = this.transactions.create({
-      portfolio_id: portfolioId,
+      portfolioId: portfolioId,
       symbol,
       exchange,
       quantity_delta: String(quantity),
@@ -133,7 +133,7 @@ export class PortfolioServiceV2 {
     })
 
     // Update or create holding
-    let holding = await this.holdings.findOne({ where: { portfolio_id: portfolioId, symbol } })
+    let holding = await this.holdings.findOne({ where: { portfolioId: portfolioId, symbol } })
     if (holding) {
       const existingQty = Number(holding.quantity)
       const newQty = existingQty + quantity
@@ -144,7 +144,7 @@ export class PortfolioServiceV2 {
       await this.holdings.save(holding)
     } else {
       holding = this.holdings.create({
-        portfolio_id: portfolioId,
+        portfolioId: portfolioId,
         symbol,
         exchange,
         quantity: String(quantity),
@@ -163,7 +163,7 @@ export class PortfolioServiceV2 {
   }
 
   async removeStockFromPortfolio(portfolioId: string, symbol: string, quantity?: number): Promise<{ ok: boolean; message?: string }> {
-    const holding = await this.holdings.findOne({ where: { portfolio_id: portfolioId, symbol } })
+    const holding = await this.holdings.findOne({ where: { portfolioId: portfolioId, symbol } })
     if (!holding) {
       return { ok: false, message: 'Holding not found' }
     }
@@ -181,7 +181,7 @@ export class PortfolioServiceV2 {
 
     // Create transaction
     const transaction = this.transactions.create({
-      portfolio_id: portfolioId,
+      portfolioId: portfolioId,
       symbol,
       exchange: holding.exchange,
       quantity_delta: String(-sellQty),
@@ -215,9 +215,9 @@ export class PortfolioServiceV2 {
 
     // Delete all related records
     await this.dataSource.transaction(async (manager) => {
-      await manager.delete(PortfolioTransactionV2, { portfolio_id: portfolioId })
-      await manager.delete(Holding, { portfolio_id: portfolioId })
-      await manager.delete(PortfolioSnapshotV2, { portfolio_id: portfolioId })
+      await manager.delete(PortfolioTransactionV2, { portfolioId: portfolioId })
+      await manager.delete(Holding, { portfolioId: portfolioId })
+      await manager.delete(PortfolioSnapshotV2, { portfolioId: portfolioId })
       await manager.delete(PortfolioV2, { id: portfolioId })
     })
 

@@ -40,7 +40,7 @@ export class PortfolioJobsService {
           // Check if snapshot already exists for today
           const existingSnapshot = await this.snapshots.findOne({
             where: {
-              portfolio_id: portfolio.id,
+              portfolioId: portfolio.id,
               date: today,
             },
           })
@@ -127,7 +127,7 @@ export class PortfolioJobsService {
             const quantity = Number(holding.quantity)
             const currentValueCents = Math.round(quote.price * quantity)
 
-            await this.valuationService.invalidatePortfolioCache(holding.portfolio_id)
+            await this.valuationService.invalidatePortfolioCache(holding.portfolioId)
             updated++
           }
         } catch (error) {
@@ -180,7 +180,7 @@ export class PortfolioJobsService {
 
     return this.snapshots
       .createQueryBuilder('snapshot')
-      .where('snapshot.portfolio_id = :portfolioId', { portfolioId })
+      .where('snapshot.portfolioId = :portfolioId', { portfolioId })
       .andWhere('snapshot.date >= :startDate', { startDate })
       .orderBy('snapshot.date', 'ASC')
       .getMany()

@@ -36,7 +36,7 @@ export class HoldingsService {
       throw new NotFoundException('Portfolio not found')
     }
 
-    const holdings = await this.holdings.find({ where: { portfolio_id: portfolioId } })
+    const holdings = await this.holdings.find({ where: { portfolioId: portfolioId } })
     const summaries: HoldingSummary[] = []
 
     // Get all symbols for this portfolio
@@ -142,7 +142,7 @@ export class HoldingsService {
   }
 
   async getHolding(portfolioId: string, symbol: string): Promise<HoldingSummary | null> {
-    const holding = await this.holdings.findOne({ where: { portfolio_id: portfolioId, symbol } })
+    const holding = await this.holdings.findOne({ where: { portfolioId: portfolioId, symbol } })
     if (!holding) return null
 
     const quantity = Number(holding.quantity)
@@ -180,14 +180,14 @@ export class HoldingsService {
 
   async updateHoldingCurrentValue(portfolioId: string, symbol: string, currentValueCents: number): Promise<void> {
     await this.holdings.update(
-      { portfolio_id: portfolioId, symbol },
+      { portfolioId: portfolioId, symbol },
       { current_value: currentValueCents }
     )
   }
 
   async getAllHoldingsWithSymbols(): Promise<{ portfolioId: string; symbol: string }[]> {
-    const holdings = await this.holdings.find({ select: ['portfolio_id', 'symbol'] })
-    return holdings.map(h => ({ portfolioId: h.portfolio_id, symbol: h.symbol }))
+    const holdings = await this.holdings.find({ select: ['portfolioId', 'symbol'] })
+    return holdings.map(h => ({ portfolioId: h.portfolioId, symbol: h.symbol }))
   }
 
   async getHoldingsBySymbol(symbol: string): Promise<Holding[]> {
@@ -199,7 +199,7 @@ export class HoldingsService {
    */
   async addHolding(portfolioId: string, symbol: string, quantity: number, avgCostCents: number): Promise<Holding> {
     const holding = this.holdings.create({
-      portfolio_id: portfolioId,
+      portfolioId: portfolioId,
       symbol,
       quantity: String(quantity),
       avg_cost: avgCostCents,
@@ -219,7 +219,7 @@ export class HoldingsService {
    * Remove holding and clear cache if symbol is no longer used
    */
   async removeHolding(portfolioId: string, symbol: string): Promise<void> {
-    await this.holdings.delete({ portfolio_id: portfolioId, symbol })
+    await this.holdings.delete({ portfolioId: portfolioId, symbol })
 
     // Check if this symbol is still used in any other portfolio
     const remainingHoldings = await this.getHoldingsBySymbol(symbol)
@@ -238,7 +238,7 @@ export class HoldingsService {
    */
   async updateHoldingQuantity(portfolioId: string, symbol: string, quantity: number): Promise<void> {
     await this.holdings.update(
-      { portfolio_id: portfolioId, symbol },
+      { portfolioId: portfolioId, symbol },
       { quantity: String(quantity) }
     )
 

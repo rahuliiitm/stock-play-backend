@@ -4,13 +4,13 @@ import { PortfolioV2 } from './PortfolioV2.entity'
 export type TransactionType = 'BUY' | 'SELL' | 'DEPOSIT' | 'WITHDRAW'
 
 @Entity('portfolio_transactions_v2')
-@Index(['portfolio_id', 'created_at'])
+@Index(['portfolioId', 'created_at'])
 export class PortfolioTransactionV2 {
   @PrimaryGeneratedColumn('uuid')
   id!: string
 
   @Column({ type: 'uuid' })
-  portfolio_id!: string
+  portfolioId!: string
 
   @Column({ type: 'varchar', length: 16, nullable: true })
   symbol!: string | null
@@ -34,6 +34,6 @@ export class PortfolioTransactionV2 {
   created_at!: Date
 
   @ManyToOne(() => PortfolioV2)
-  @JoinColumn({ name: 'portfolio_id' })
+  @JoinColumn({ name: 'portfolioId' })
   portfolio!: PortfolioV2
 }

@@ -2,13 +2,13 @@ import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } 
 import { PortfolioV2 } from './PortfolioV2.entity'
 
 @Entity('holdings')
-@Index(['portfolio_id', 'symbol'], { unique: true })
+@Index(['portfolioId', 'symbol'], { unique: true })
 export class Holding {
   @PrimaryGeneratedColumn('uuid')
   id!: string
 
   @Column({ type: 'uuid' })
-  portfolio_id!: string
+  portfolioId!: string
 
   @Column({ type: 'varchar', length: 16 })
   symbol!: string
@@ -26,6 +26,6 @@ export class Holding {
   current_value!: number
 
   @ManyToOne(() => PortfolioV2, (p) => p.holdings)
-  @JoinColumn({ name: 'portfolio_id' })
+  @JoinColumn({ name: 'portfolioId' })
   portfolio!: PortfolioV2
 }
