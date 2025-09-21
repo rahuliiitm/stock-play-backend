@@ -43,7 +43,7 @@ export class BrokerService {
       // Update existing account
       account.account_name = accountName
       account.status = 'active'
-      account.last_sync_error = null
+      account.last_sync_error = undefined
       account = await this.brokerAccounts.save(account)
     } else {
       // Create new account
@@ -207,7 +207,7 @@ export class BrokerService {
       // Update account status
       account.status = 'active'
       account.last_sync_at = new Date()
-      account.last_sync_error = null
+      account.last_sync_error = undefined
       await this.brokerAccounts.save(account)
 
       return {
@@ -254,8 +254,8 @@ export class BrokerService {
 
     return {
       status: account.status,
-      lastSyncAt: account.last_sync_at,
-      lastSyncError: account.last_sync_error,
+      lastSyncAt: account.last_sync_at || null,
+      lastSyncError: account.last_sync_error || null,
     }
   }
 

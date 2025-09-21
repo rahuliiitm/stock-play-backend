@@ -1,13 +1,8 @@
 import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
 import { User } from './User.entity'
-import { BrokerToken } from './BrokerToken.entity'
-
-export type BrokerType = 'groww'
-
-export type BrokerAccountStatus = 'active' | 'inactive' | 'error' | 'expired'
 
 @Entity('broker_accounts')
-@Index(['user_id', 'broker'], { unique: true })
+@Index(['user_id', 'broker', 'account_id'], { unique: true })
 export class BrokerAccount {
   @PrimaryGeneratedColumn('uuid')
   id!: string
@@ -15,26 +10,38 @@ export class BrokerAccount {
   @Column({ type: 'uuid' })
   user_id!: string
 
-  @Column({ type: 'varchar', length: 16 })
-  broker!: BrokerType
-
-  @Column({ type: 'varchar', length: 64 })
-  account_id!: string // Groww account ID
+  @Column({ type: 'varchar', length: 50 })
+  broker!: string
 
   @Column({ type: 'varchar', length: 100 })
-  account_name!: string
+  account_id!: string
 
-  @Column({ type: 'varchar', length: 16, default: 'active' })
-  status!: BrokerAccountStatus
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  account_name?: string
 
-  @Column({ type: 'jsonb', nullable: true })
-  metadata!: Record<string, any> | null // Additional broker-specific data
+  @Column({ type: 'varchar', length: 255 })
+  api_key!: string
+
+  @Column({ type: 'varchar', length: 255 })
+  api_secret!: string
+
+  @Column({ type: 'text', nullable: true })
+  access_token?: string
 
   @Column({ type: 'timestamptz', nullable: true })
-  last_sync_at!: Date | null
+  token_expires_at?: Date
 
-  @Column({ type: 'varchar', length: 500, nullable: true })
-  last_sync_error!: string | null
+  @Column({ type: 'varchar', length: 20, default: 'active' })
+  status!: string
+
+  @Column({ type: 'timestamptz', nullable: true })
+  last_sync_at?: Date
+
+  @Column({ type: 'text', nullable: true })
+  last_sync_error?: string
+
+  @Column({ type: 'jsonb', nullable: true })
+  metadata?: any
 
   @CreateDateColumn({ type: 'timestamptz' })
   created_at!: Date
@@ -46,7 +53,21 @@ export class BrokerAccount {
   @JoinColumn({ name: 'user_id' })
   user!: User
 
-  @OneToMany(() => BrokerToken, (token) => token.broker_account)
-  tokens!: BrokerToken[]
-}
+  @OneToMany('RealHolding', 'broker_account')
+  holdings!: any[]
 
+  @OneToMany('RealPosition', 'broker_account')
+  positions!: any[]
+
+  @OneToMany('OrderHistory', 'broker_account')
+  order_history!: any[]
+
+  @OneToMany('PortfolioSnapshot', 'broker_account')
+  portfolio_snapshots!: any[]
+
+  @OneToMany('SyncBatch', 'broker_account')
+  sync_batches!: any[]
+
+  @OneToMany('BrokerToken', 'broker_account')
+  tokens!: any[]
+}

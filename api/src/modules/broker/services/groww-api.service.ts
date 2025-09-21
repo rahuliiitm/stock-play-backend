@@ -58,6 +58,14 @@ export class GrowwApiService {
   private tokenExpiry: Date | null = null
 
   /**
+   * Set access token for this instance
+   */
+  setAccessToken(accessToken: string): void {
+    this.accessToken = accessToken
+    this.httpClient.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
+  }
+
+  /**
    * Static method to get access token (similar to Python SDK's GrowwAPI.get_access_token)
    * Usage: const accessToken = await GrowwApiService.getAccessToken(apiKey, apiSecret)
    */
@@ -90,8 +98,7 @@ export class GrowwApiService {
 
   constructor(
     private configService: ConfigService,
-    @Inject('REDIS_CLIENT') private redis: Redis,
-    accessToken?: string
+    @Inject('REDIS_CLIENT') private redis: Redis
   ) {
     this.httpClient = axios.create({
       baseURL: this.API_BASE_URL,
@@ -104,21 +111,7 @@ export class GrowwApiService {
       }
     })
 
-    // If access token is provided, set it immediately (similar to Python SDK initialization)
-    if (accessToken) {
-      this.accessToken = accessToken
-      this.httpClient.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
-      
-      // Calculate expiry (tokens expire at 6AM every day as per documentation)
-      const now = new Date()
-      const tomorrow6AM = new Date(now)
-      tomorrow6AM.setDate(tomorrow6AM.getDate() + 1)
-      tomorrow6AM.setHours(6, 0, 0, 0)
-      this.tokenExpiry = tomorrow6AM
-      
-      this.logger.log('✅ GrowwApiService initialized with access token')
-      this.logger.log(`Token expires at: ${this.tokenExpiry.toISOString()}`)
-    }
+    // Access token will be set via setAccessToken method when needed
 
     // Add response interceptor for error handling
     this.httpClient.interceptors.response.use(
@@ -484,6 +477,13 @@ export class GrowwApiService {
       this.logger.error(`❌ Failed to get trades for order ${orderId}:`, error.message)
       throw new Error(`Failed to get order trades: ${error.message}`)
     }
+  }
+
+  /**
+   * Get order status (alias for getOrderDetails for backward compatibility)
+   */
+  async getOrderStatus(orderId: string): Promise<any> {
+    return this.getOrderDetails(orderId)
   }
 
   /**

@@ -62,8 +62,11 @@ async function testGrowwTypeScriptSDK() {
     const configService = new ConfigService();
     const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
     
-    // Initialize with access token (similar to Python SDK)
-    const growwApiService = new GrowwApiService(configService, redis, accessToken);
+    // Initialize GrowwApiService
+    const growwApiService = new GrowwApiService(configService, redis);
+    
+    // Set access token using the new method
+    growwApiService.setAccessToken(accessToken);
     
     console.log('✅ GrowwApiService initialized with access token');
 

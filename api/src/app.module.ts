@@ -12,6 +12,7 @@ import { UsersModule } from './modules/users/users.module'
 import { TradingModule } from './modules/trading/trading.module'
 import { StrategyModule } from './modules/strategy/strategy.module'
 import { BrokerModule } from './modules/broker/broker.module'
+import { PortfolioSchedulerModule } from './modules/portfolio-scheduler/portfolio-scheduler.module'
 // MarketDataModule will be added later
 // import { MarketDataModule } from './modules/market-data/market-data.module'
 
@@ -40,6 +41,7 @@ import { BrokerModule } from './modules/broker/broker.module'
     TradingModule,
     StrategyModule,
     BrokerModule,
+    PortfolioSchedulerModule,
     // MarketDataModule,
   ],
   controllers: [AppController],
