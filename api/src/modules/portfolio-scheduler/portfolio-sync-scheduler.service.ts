@@ -109,19 +109,30 @@ export class PortfolioSyncSchedulerService {
     try {
       this.logger.log(`📊 Syncing portfolio for account: ${account.id} (${account.broker})`)
 
-      // Use the injected GrowwApiService with the account's access token
-      // Note: We need to set the access token for this specific account
-      if (!account.access_token) {
-        throw new Error('No access token available for this account')
+      // Use TOTP authentication to get fresh access token
+      if (!account.api_key || !account.api_secret) {
+        throw new Error('No API credentials available for this account')
       }
-      this.growwApiService.setAccessToken(account.access_token)
+      
+      // Get fresh access token using TOTP flow
+      const accessToken = await this.growwApiService.getAccessToken(account.api_key, account.api_secret)
+      this.growwApiService.setAccessToken(accessToken)
 
-      // Step 1: Fetch current data from Groww API
-      const [holdings, positions, orders] = await Promise.all([
-        this.growwApiService.getHoldings(),
-        this.growwApiService.getPositions(),
-        this.growwApiService.getOrderList(0, 100) // Get recent 100 orders
-      ])
+      // Step 1: Fetch current data from Groww API (sequential to avoid rate limiting)
+      this.logger.log('📊 Fetching holdings...')
+      const holdings = await this.growwApiService.getHoldingsDirect()
+      
+      this.logger.log('📊 Fetching positions...')
+      const positions = await this.growwApiService.getPositionsDirect()
+      
+      this.logger.log('📊 Fetching orders...')
+      const orders = await this.growwApiService.getOrderListDirect(0, 100) // Get recent 100 orders
+      
+      // Debug: Log the first order structure to understand the data format
+      if (orders.order_list && orders.order_list.length > 0) {
+        this.logger.log('📊 First order structure:', JSON.stringify(orders.order_list[0], null, 2))
+        this.logger.log('📊 Available fields:', Object.keys(orders.order_list[0]))
+      }
 
       this.logger.log(`📈 Fetched data: ${holdings.length} holdings, ${positions.length} positions, ${orders.order_list?.length || 0} orders`)
 
@@ -167,7 +178,7 @@ export class PortfolioSyncSchedulerService {
       const existingHolding = await this.realHoldingsRepository.findOne({
         where: {
           broker_account_id: account.id,
-          symbol: holding.trading_symbol,
+          symbol: holding.symbol,
           exchange: 'NSE'
         }
       })
@@ -188,7 +199,7 @@ export class PortfolioSyncSchedulerService {
         // Create new holding
         await this.realHoldingsRepository.save({
           broker_account_id: account.id,
-          symbol: holding.trading_symbol,
+          symbol: holding.symbol,
           exchange: 'NSE',
           isin: holding.isin,
           quantity: holding.quantity,
@@ -207,43 +218,39 @@ export class PortfolioSyncSchedulerService {
   }
 
   /**
-   * Update positions data
+   * Update positions data - APPEND ONLY for complete audit trail
    */
   private async updatePositions(
     account: BrokerAccount,
     positions: any[],
     syncBatch: SyncBatch
   ): Promise<void> {
-    this.logger.log(`📊 Updating ${positions.length} positions for account: ${account.id}`)
+    this.logger.log(`📊 Processing ${positions.length} positions for account: ${account.id} (APPEND-ONLY)`)
+
+    let positionsCreated = 0
 
     for (const position of positions) {
+      // Check if this exact position already exists (to avoid duplicates)
       const existingPosition = await this.realPositionsRepository.findOne({
         where: {
           broker_account_id: account.id,
-          symbol: position.trading_symbol,
+          symbol: position.symbol,
           exchange: 'NSE',
-          segment: position.segment || 'CASH'
-        }
-      })
-
-      if (existingPosition) {
-        // Update existing position
-        await this.realPositionsRepository.update(existingPosition.id, {
+          segment: position.segment || 'CASH',
           credit_quantity: position.credit_quantity || 0,
           credit_price: position.credit_price || 0,
           debit_quantity: position.debit_quantity || 0,
           debit_price: position.debit_price || 0,
-          carry_forward_credit_quantity: position.carry_forward_credit_quantity || 0,
-          carry_forward_credit_price: position.carry_forward_credit_price || 0,
-          carry_forward_debit_quantity: position.carry_forward_debit_quantity || 0,
-          carry_forward_debit_price: position.carry_forward_debit_price || 0,
-          last_updated_at: new Date()
-        })
-      } else {
-        // Create new position
+          net_quantity: position.net_quantity || 0,
+          net_price: position.net_price || 0
+        }
+      })
+
+      if (!existingPosition) {
+        // Create new position record (APPEND-ONLY)
         await this.realPositionsRepository.save({
           broker_account_id: account.id,
-          symbol: position.trading_symbol,
+          symbol: position.symbol,
           exchange: 'NSE',
           segment: position.segment || 'CASH',
           credit_quantity: position.credit_quantity || 0,
@@ -253,13 +260,43 @@ export class PortfolioSyncSchedulerService {
           carry_forward_credit_quantity: position.carry_forward_credit_quantity || 0,
           carry_forward_credit_price: position.carry_forward_credit_price || 0,
           carry_forward_debit_quantity: position.carry_forward_debit_quantity || 0,
-          carry_forward_debit_price: position.carry_forward_debit_price || 0
+          carry_forward_debit_price: position.carry_forward_debit_price || 0,
+          net_quantity: position.net_quantity || 0,
+          net_price: position.net_price || 0,
+          created_at: new Date(),
+          last_updated_at: new Date()
         })
+        positionsCreated++
+        this.logger.log(`📈 Created new position record: ${position.symbol} - Net Qty: ${position.net_quantity}`)
+      } else {
+        this.logger.log(`📊 Position already exists: ${position.symbol} - Net Qty: ${position.net_quantity}`)
       }
     }
 
-    syncBatch.positions_updated = positions.length
+    syncBatch.positions_updated = positionsCreated
     await this.syncBatchesRepository.save(syncBatch)
+    
+    this.logger.log(`✅ Positions processed: ${positionsCreated} new records created (APPEND-ONLY)`)
+  }
+
+  /**
+   * Get complete position history for a symbol (buy-to-sell lifecycle)
+   */
+  async getPositionHistory(accountId: string, symbol: string): Promise<any[]> {
+    this.logger.log(`📊 Getting position history for ${symbol} in account: ${accountId}`)
+    
+    const positionHistory = await this.realPositionsRepository.find({
+      where: {
+        broker_account_id: accountId,
+        symbol: symbol
+      },
+      order: {
+        created_at: 'ASC' // Chronological order
+      }
+    })
+
+    this.logger.log(`📈 Found ${positionHistory.length} position records for ${symbol}`)
+    return positionHistory
   }
 
   /**
@@ -307,11 +344,15 @@ export class PortfolioSyncSchedulerService {
     order: any,
     syncBatch: SyncBatch
   ): Promise<void> {
+    // Debug: Log order structure to understand available fields
+    this.logger.log('📊 Processing order with fields:', Object.keys(order))
+    this.logger.log('📊 Order data:', JSON.stringify(order, null, 2))
+    
     const orderHistory = new OrderHistory()
     orderHistory.broker_account_id = account.id
     orderHistory.groww_order_id = order.groww_order_id
     orderHistory.order_reference_id = order.order_reference_id
-    orderHistory.symbol = order.trading_symbol
+    orderHistory.symbol = order.trading_symbol || order.symbol || order.instrument_name || order.stock_symbol || 'UNKNOWN'
     orderHistory.exchange = order.exchange || 'NSE'
     orderHistory.segment = order.segment || 'CASH'
     orderHistory.product = order.product
@@ -339,10 +380,10 @@ export class PortfolioSyncSchedulerService {
     if (order.filled_quantity > 0) {
       await this.createQuantityChangeRecord(
         orderHistory,
-        order.symbol,
+        orderHistory.symbol, // Use the processed symbol from orderHistory
         'ORDER_PLACED',
         0,
-        order.filled_quantity,
+        order.filled_quantity || 0,
         order.filled_quantity,
         order.average_fill_price,
         'ORDER_EXECUTED',
@@ -369,8 +410,8 @@ export class PortfolioSyncSchedulerService {
         existingOrder,
         existingOrder.symbol,
         quantityDelta > 0 ? 'QUANTITY_ADDED' : 'QUANTITY_REMOVED',
-        existingOrder.filled_quantity,
-        newOrderData.filled_quantity,
+        existingOrder.filled_quantity || 0,
+        newOrderData.filled_quantity || 0,
         quantityDelta,
         newOrderData.average_fill_price,
         'ORDER_EXECUTED',
@@ -394,8 +435,8 @@ export class PortfolioSyncSchedulerService {
         existingOrder,
         existingOrder.symbol,
         'STATUS_CHANGED',
-        existingOrder.filled_quantity,
-        newOrderData.filled_quantity,
+        existingOrder.filled_quantity || 0,
+        newOrderData.filled_quantity || 0,
         0,
         newOrderData.average_fill_price,
         `STATUS_CHANGED_${existingOrder.order_status}_TO_${newOrderData.order_status}`,
@@ -422,13 +463,19 @@ export class PortfolioSyncSchedulerService {
     changeReason: string,
     syncBatchId: string
   ): Promise<void> {
+    // Safety checks to prevent null values
+    const safeSymbol = symbol || orderHistory.symbol || 'UNKNOWN'
+    const safePreviousQuantity = previousQuantity ?? 0
+    const safeNewQuantity = newQuantity ?? 0
+    const safeQuantityDelta = quantityDelta ?? (safeNewQuantity - safePreviousQuantity)
+    
     const quantityChange = this.orderQuantityChangesRepository.create({
       order_history_id: orderHistory.id,
-      symbol,
+      symbol: safeSymbol,
       change_type: changeType,
-      previous_quantity: previousQuantity,
-      new_quantity: newQuantity,
-      quantity_delta: quantityDelta,
+      previous_quantity: safePreviousQuantity,
+      new_quantity: safeNewQuantity,
+      quantity_delta: safeQuantityDelta,
       price_at_change: priceAtChange,
       change_reason: changeReason,
       sync_batch_id: syncBatchId

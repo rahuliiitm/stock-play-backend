@@ -15,7 +15,6 @@ import { PortfolioV2Controller } from './portfolio-v2.controller'
 import { PublicController } from './public.controller'
 import { BrokerController } from './broker.controller'
 import { StocksModule } from '../stocks/stocks.module'
-import { GrowwAuthService } from '../stocks/providers/groww-auth.service'
 import { JwtModule } from '@nestjs/jwt'
 import { PortfolioV2 } from '../../entities/PortfolioV2.entity'
 import { Holding } from '../../entities/Holding.entity'
@@ -60,7 +59,6 @@ import { BrokerModule } from '../broker/broker.module'
     PortfolioJobsService,
     SearchService,
     BrokerService,
-    GrowwAuthService,
     PortfolioEventsService,
     PortfolioValueUpdateService,
     StockQuoteCacheService,

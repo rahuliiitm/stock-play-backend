@@ -4,6 +4,7 @@ import { RolesGuard } from '../auth/roles.guard'
 import { Roles } from '../auth/roles.decorator'
 import { PortfolioSyncSchedulerService } from './portfolio-sync-scheduler.service'
 import { BrokerAccountsService } from './broker-accounts.service'
+// import { WorkingGrowwApiService } from '../broker/services/working-groww-api.service'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { BrokerAccount } from '../../entities/BrokerAccount.entity'
@@ -20,6 +21,7 @@ export class PortfolioSchedulerController {
   constructor(
     private readonly portfolioSyncSchedulerService: PortfolioSyncSchedulerService,
     private readonly brokerAccountsService: BrokerAccountsService,
+    // private readonly workingGrowwApiService: WorkingGrowwApiService,
     
     @InjectRepository(BrokerAccount)
     private readonly brokerAccountsRepository: Repository<BrokerAccount>,
@@ -42,6 +44,59 @@ export class PortfolioSchedulerController {
     @InjectRepository(SyncBatch)
     private readonly syncBatchesRepository: Repository<SyncBatch>,
   ) {}
+
+  /**
+   * Test endpoint to verify Groww API integration
+   */
+  @Get('test-groww')
+  async testGrowwApi() {
+    try {
+      const axios = require('axios');
+      const crypto = require('crypto');
+      
+      // Get credentials from environment
+      const apiKey = process.env.GROWW_API_KEY;
+      const apiSecret = process.env.GROWW_API_SECRET;
+      
+      if (!apiKey || !apiSecret) {
+        return { error: 'Groww API credentials not configured' };
+      }
+      
+      // Get access token using TOTP flow
+      const { authenticator } = require('otplib');
+      const totp = authenticator.generate(apiSecret);
+      
+      const authResponse = await axios.post(
+        'https://api.groww.in/v1/token/api/access',
+        {
+          key_type: 'totp',
+          totp: totp
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      const accessToken = authResponse.data.token;
+      
+      return {
+        success: true,
+        message: 'Groww API test successful',
+        accessToken: accessToken.substring(0, 20) + '...',
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('Groww API test failed:', error);
+      return { 
+        success: false, 
+        error: error.message,
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
 
   /**
    * Trigger manual portfolio sync for current user
@@ -78,8 +133,26 @@ export class PortfolioSchedulerController {
    * Get broker accounts for current user
    */
   @Get('broker-accounts')
-  async getBrokerAccounts(@Param('userId') userId: string) {
-    return this.brokerAccountsService.getBrokerAccounts(userId)
+  async getBrokerAccounts(@Query('userId') userId: string) {
+    try {
+      // Direct database query - simplified for testing
+      const accounts = await this.brokerAccountsRepository.find({
+        select: ['id', 'broker', 'account_id', 'account_name', 'status', 'created_at', 'last_sync_at']
+      })
+      
+      return accounts.map(account => ({
+        id: account.id,
+        broker: account.broker,
+        user_id: userId,
+        account_name: account.account_name,
+        is_active: account.status === 'active',
+        created_at: account.created_at,
+        last_sync: account.last_sync_at
+      }))
+    } catch (error) {
+      console.error('Error fetching broker accounts:', error)
+      return { error: error.message }
+    }
   }
 
   /**
@@ -144,49 +217,152 @@ export class PortfolioSchedulerController {
   }
 
   /**
-   * Get current holdings for a broker account
+   * Get current holdings for a broker account using direct Groww API
    */
   @Get('holdings/:accountId')
   async getHoldings(
     @Param('accountId') accountId: string,
     @Query('userId') userId: string
   ) {
-    // Verify account belongs to user
-    const account = await this.brokerAccountsRepository.findOne({
-      where: { id: accountId, user_id: userId }
-    })
-
-    if (!account) {
-      throw new Error('Account not found or access denied')
+    try {
+      // Use the working direct API approach
+      const axios = require('axios');
+      const crypto = require('crypto');
+      
+      // Get credentials from environment
+      const apiKey = process.env.GROWW_API_KEY;
+      const apiSecret = process.env.GROWW_API_SECRET;
+      
+      if (!apiKey || !apiSecret) {
+        throw new Error('Groww API credentials not configured');
+      }
+      
+      // Get access token using TOTP flow
+      const { authenticator } = require('otplib');
+      const totp = authenticator.generate(apiSecret);
+      
+      const authResponse = await axios.post(
+        'https://api.groww.in/v1/token/api/access',
+        {
+          key_type: 'totp',
+          totp: totp
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      const accessToken = authResponse.data.token;
+      
+      // Get holdings from Groww API
+      const holdingsResponse = await axios.get('https://api.groww.in/v1/holdings/user', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Accept': 'application/json',
+          'X-API-VERSION': '1.0'
+        }
+      });
+      
+      if (holdingsResponse.data.status === 'SUCCESS' && holdingsResponse.data.payload?.holdings) {
+        const holdings = holdingsResponse.data.payload.holdings;
+        
+        // Transform Groww API response to our format
+        return holdings.map((holding, index) => ({
+          id: `groww-${holding.trading_symbol}-${index}`,
+          symbol: holding.trading_symbol,
+          quantity: holding.quantity,
+          average_price: holding.average_price,
+          current_price: holding.current_price || null,
+          total_value: holding.current_price ? holding.quantity * holding.current_price : null,
+          pnl: holding.current_price ? (holding.quantity * holding.current_price) - (holding.quantity * holding.average_price) : null,
+          pnl_percentage: holding.current_price && holding.average_price ? 
+            ((holding.current_price - holding.average_price) / holding.average_price) * 100 : null,
+          last_updated: new Date().toISOString()
+        }));
+      } else {
+        return [];
+      }
+    } catch (error) {
+      console.error('Error fetching holdings from Groww API:', error);
+      return { error: error.message };
     }
-
-    return this.realHoldingsRepository.find({
-      where: { broker_account_id: accountId },
-      order: { symbol: 'ASC' }
-    })
   }
 
   /**
-   * Get current positions for a broker account
+   * Get current positions for a broker account using direct Groww API
    */
   @Get('positions/:accountId')
   async getPositions(
     @Param('accountId') accountId: string,
     @Query('userId') userId: string
   ) {
-    // Verify account belongs to user
-    const account = await this.brokerAccountsRepository.findOne({
-      where: { id: accountId, user_id: userId }
-    })
-
-    if (!account) {
-      throw new Error('Account not found or access denied')
+    try {
+      // Use the working direct API approach
+      const axios = require('axios');
+      const crypto = require('crypto');
+      
+      // Get credentials from environment
+      const apiKey = process.env.GROWW_API_KEY;
+      const apiSecret = process.env.GROWW_API_SECRET;
+      
+      if (!apiKey || !apiSecret) {
+        throw new Error('Groww API credentials not configured');
+      }
+      
+      // Get access token using TOTP flow
+      const { authenticator } = require('otplib');
+      const totp = authenticator.generate(apiSecret);
+      
+      const authResponse = await axios.post(
+        'https://api.groww.in/v1/token/api/access',
+        {
+          key_type: 'totp',
+          totp: totp
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      const accessToken = authResponse.data.token;
+      
+      // Get positions from Groww API
+      const positionsResponse = await axios.get('https://api.groww.in/v1/positions/user', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Accept': 'application/json',
+          'X-API-VERSION': '1.0'
+        }
+      });
+      
+      if (positionsResponse.data.status === 'SUCCESS' && positionsResponse.data.payload?.positions) {
+        const positions = positionsResponse.data.payload.positions;
+        
+        // Transform Groww API response to our format
+        return positions.map((position, index) => ({
+          id: `groww-${position.trading_symbol}-${index}`,
+          symbol: position.trading_symbol,
+          segment: position.segment,
+          net_quantity: position.net_quantity,
+          net_price: position.net_price,
+          net_value: position.net_value,
+          pnl: position.pnl,
+          pnl_percentage: position.pnl_percentage,
+          last_updated: new Date().toISOString()
+        }));
+      } else {
+        return [];
+      }
+    } catch (error) {
+      console.error('Error fetching positions from Groww API:', error);
+      return { error: error.message };
     }
-
-    return this.realPositionsRepository.find({
-      where: { broker_account_id: accountId },
-      order: { symbol: 'ASC' }
-    })
   }
 
   /**
@@ -330,54 +506,87 @@ export class PortfolioSchedulerController {
   }
 
   /**
-   * Get portfolio summary for a broker account
+   * Get portfolio summary for a broker account using direct Groww API
    */
   @Get('summary/:accountId')
   async getPortfolioSummary(
     @Param('accountId') accountId: string,
     @Query('userId') userId: string
   ) {
-    // Verify account belongs to user
-    const account = await this.brokerAccountsRepository.findOne({
-      where: { id: accountId, user_id: userId }
-    })
-
-    if (!account) {
-      throw new Error('Account not found or access denied')
-    }
-
-    const [holdings, positions, latestSnapshot] = await Promise.all([
-      this.realHoldingsRepository.find({ where: { broker_account_id: accountId } }),
-      this.realPositionsRepository.find({ where: { broker_account_id: accountId } }),
-      this.portfolioSnapshotsRepository.findOne({
-        where: { broker_account_id: accountId },
-        order: { snapshot_date: 'DESC' }
-      })
-    ])
-
-    const totalHoldingsValue = holdings.reduce((sum, h) => sum + (h.current_value || 0), 0)
-    const totalPositionsValue = positions.reduce((sum, p) => sum + (p.net_quantity * p.net_price), 0)
-    const totalPortfolioValue = totalHoldingsValue + totalPositionsValue
-
-    return {
-      account: {
-        id: account.id,
-        broker_name: account.broker,
-        account_id: account.account_id,
-        is_active: account.status === 'active'
-      },
-      portfolio: {
-        total_holdings_value: totalHoldingsValue,
-        total_positions_value: totalPositionsValue,
-        total_portfolio_value: totalPortfolioValue,
-        holdings_count: holdings.length,
-        positions_count: positions.length
-      },
-      latest_snapshot: latestSnapshot,
-      last_updated: Math.max(
-        ...holdings.map(h => h.last_updated_at.getTime()),
-        ...positions.map(p => p.last_updated_at.getTime())
-      )
+    try {
+      // Use the working direct API approach
+      const axios = require('axios');
+      const crypto = require('crypto');
+      
+      // Get credentials from environment
+      const apiKey = process.env.GROWW_API_KEY;
+      const apiSecret = process.env.GROWW_API_SECRET;
+      
+      if (!apiKey || !apiSecret) {
+        throw new Error('Groww API credentials not configured');
+      }
+      
+      // Get access token using TOTP flow
+      const { authenticator } = require('otplib');
+      const totp = authenticator.generate(apiSecret);
+      
+      const authResponse = await axios.post(
+        'https://api.groww.in/v1/token/api/access',
+        {
+          key_type: 'totp',
+          totp: totp
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      const accessToken = authResponse.data.token;
+      
+      // Get holdings from Groww API
+      const holdingsResponse = await axios.get('https://api.groww.in/v1/holdings/user', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Accept': 'application/json',
+          'X-API-VERSION': '1.0'
+        }
+      });
+      
+      if (holdingsResponse.data.status === 'SUCCESS' && holdingsResponse.data.payload?.holdings) {
+        const holdings = holdingsResponse.data.payload.holdings;
+        
+        // Calculate portfolio summary from real Groww data
+        const totalInvested = holdings.reduce((sum, h) => 
+          sum + (h.quantity * h.average_price), 0);
+        
+        const currentValue = holdings.reduce((sum, h) => 
+          sum + (h.current_price ? h.quantity * h.current_price : 0), 0);
+        
+        const totalPnl = currentValue - totalInvested;
+        const totalPnlPercentage = totalInvested > 0 ? (totalPnl / totalInvested) * 100 : 0;
+        
+        return {
+          total_invested: totalInvested,
+          current_value: currentValue,
+          total_pnl: totalPnl,
+          total_pnl_percentage: totalPnlPercentage,
+          holdings_count: holdings.length
+        };
+      } else {
+        return {
+          total_invested: 0,
+          current_value: 0,
+          total_pnl: 0,
+          total_pnl_percentage: 0,
+          holdings_count: 0
+        };
+      }
+    } catch (error) {
+      console.error('Error fetching portfolio summary from Groww API:', error);
+      return { error: error.message };
     }
   }
 
@@ -413,4 +622,43 @@ export class PortfolioSchedulerController {
       totalPages: Math.ceil(total / limit)
     }
   }
+
+  /**
+   * Get complete position history for a symbol (buy-to-sell lifecycle)
+   */
+  @Get('position-history/:accountId/:symbol')
+  async getPositionHistory(
+    @Param('accountId') accountId: string,
+    @Param('symbol') symbol: string,
+    @Query('userId') userId: string
+  ) {
+    try {
+      // Verify account belongs to user
+      const account = await this.brokerAccountsRepository.findOne({
+        where: { id: accountId, user_id: userId }
+      })
+
+      if (!account) {
+        return { error: 'Account not found or access denied' }
+      }
+
+      const positionHistory = await this.portfolioSyncSchedulerService.getPositionHistory(accountId, symbol)
+      
+      return {
+        success: true,
+        accountId,
+        symbol,
+        positionHistory,
+        totalRecords: positionHistory.length,
+        message: `Complete position lifecycle for ${symbol}`
+      }
+    } catch (error) {
+      console.error('Failed to get position history:', error)
+      return { 
+        success: false, 
+        error: error.message 
+      }
+    }
+  }
+
 }

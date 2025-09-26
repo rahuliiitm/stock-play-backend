@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { ScheduleModule } from '@nestjs/schedule'
+import { ConfigModule } from '@nestjs/config'
 
 import { PortfolioSyncSchedulerService } from './portfolio-sync-scheduler.service'
 import { PortfolioSchedulerController } from './portfolio-scheduler.controller'
 import { BrokerAccountsService } from './broker-accounts.service'
+// import { WorkingGrowwApiService } from '../broker/services/working-groww-api.service'
 import { BrokerAccount } from '../../entities/BrokerAccount.entity'
 import { RealHolding } from '../../entities/RealHolding.entity'
 import { RealPosition } from '../../entities/RealPosition.entity'

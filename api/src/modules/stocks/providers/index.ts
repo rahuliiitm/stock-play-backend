@@ -1,1 +1,0 @@
-export const QUOTES_PROVIDER = 'QUOTES_PROVIDER' 

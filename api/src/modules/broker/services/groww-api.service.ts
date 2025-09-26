@@ -169,18 +169,17 @@ export class GrowwApiService {
    */
   async getAccessToken(apiKey: string, apiSecret: string): Promise<string> {
     try {
-      this.logger.log('🔑 Getting access token using API key and secret...')
+      this.logger.log('🔑 Getting access token using TOTP flow...')
       
-      // Generate checksum as per Groww API documentation
-      const timestamp = Math.floor(Date.now() / 1000).toString()
-      const checksum = await this.generateChecksum(apiSecret, timestamp)
+      // Generate TOTP using the API secret as base32
+      const totp = await this.generateTOTP(apiSecret)
+      this.logger.log(`🔐 TOTP Generated: ${totp}`)
       
       const response: AxiosResponse<any> = await this.httpClient.post(
         '/v1/token/api/access',
         {
-          key_type: 'approval',
-          checksum: checksum,
-          timestamp: timestamp
+          key_type: 'totp',
+          totp: totp
         },
         {
           headers: {
@@ -193,7 +192,7 @@ export class GrowwApiService {
       const authData = response.data
       const accessToken = authData.token
       
-      this.logger.log('✅ Access token obtained successfully')
+      this.logger.log('✅ Access token obtained successfully via TOTP flow')
       this.logger.log(`Token Ref ID: ${authData.tokenRefId}`)
       this.logger.log(`Session Name: ${authData.sessionName}`)
       this.logger.log(`Expires At: ${authData.expiry}`)
@@ -455,6 +454,29 @@ export class GrowwApiService {
   }
 
   /**
+   * Get order list without authentication check (for scheduler)
+   */
+  async getOrderListDirect(page: number = 0, pageSize: number = 50): Promise<any> {
+    try {
+      this.logger.log(`📋 Getting order list - page ${page}, size ${pageSize}`)
+      
+      const response = await this.httpClient.get('/v1/order/list', {
+        params: { 
+          segment: 'CASH',
+          page: page,
+          page_size: pageSize
+        }
+      })
+      
+      this.logger.log(`✅ Order list retrieved - ${response.data.payload?.orders?.length || 0} orders`)
+      return response.data.payload
+    } catch (error) {
+      this.logger.error(`❌ Failed to get order list:`, error.message)
+      throw new Error(`Failed to get order list: ${error.message}`)
+    }
+  }
+
+  /**
    * Get trades for an order using official Groww API
    */
   async getOrderTrades(orderId: string, page: number = 0, pageSize: number = 50): Promise<any> {
@@ -530,6 +552,30 @@ export class GrowwApiService {
   }
 
   /**
+   * Get current positions without authentication check (for scheduler)
+   */
+  async getPositionsDirect(): Promise<GrowwPosition[]> {
+    try {
+      const response = await this.httpClient.get('/v1/positions/user')
+      const positions = response.data.payload?.positions || []
+
+      return positions.map(pos => ({
+        symbol: pos.trading_symbol,
+        side: pos.quantity > 0 ? 'BUY' : 'SELL',
+        quantity: Math.abs(pos.quantity),
+        averagePrice: pos.net_price || pos.net_carry_forward_price,
+        currentPrice: undefined, // Not provided in positions API
+        pnl: undefined, // Not provided in positions API
+        productType: pos.product
+      }))
+
+    } catch (error) {
+      this.logger.error('❌ Failed to get positions:', error.message)
+      throw new Error(`Failed to get positions: ${error.message}`)
+    }
+  }
+
+  /**
    * Get position for a specific trading symbol
    * Based on: https://groww.in/trade-api/docs/curl/portfolio
    */
@@ -568,6 +614,19 @@ export class GrowwApiService {
   async getHoldings(): Promise<any[]> {
     await this.ensureAuthenticated()
 
+    try {
+      const response = await this.httpClient.get('/v1/holdings/user')
+      return response.data.payload?.holdings || []
+    } catch (error) {
+      this.logger.error('❌ Failed to get holdings:', error.message)
+      throw new Error(`Failed to get holdings: ${error.message}`)
+    }
+  }
+
+  /**
+   * Get portfolio holdings without authentication check (for scheduler)
+   */
+  async getHoldingsDirect(): Promise<any[]> {
     try {
       const response = await this.httpClient.get('/v1/holdings/user')
       return response.data.payload?.holdings || []

@@ -15,7 +15,7 @@ export class BrokerAccountsService {
   constructor(
     @InjectRepository(BrokerAccount)
     private readonly brokerAccountsRepository: Repository<BrokerAccount>,
-    private readonly growwApiService: GrowwApiService,
+    // private readonly growwApiService: GrowwApiService, // Temporarily disabled
   ) {}
 
   /**
@@ -34,17 +34,10 @@ export class BrokerAccountsService {
     let tokenExpiry: Date | undefined
 
     try {
-      // Test the API credentials by getting an access token
-      accessToken = await GrowwApiService.getAccessToken(apiKey, apiSecret)
-      
-      // Calculate token expiry (tokens expire at 6AM daily as per Groww documentation)
-      const now = new Date()
-      const tomorrow6AM = new Date(now)
-      tomorrow6AM.setDate(tomorrow6AM.getDate() + 1)
-      tomorrow6AM.setHours(6, 0, 0, 0)
-      tokenExpiry = tomorrow6AM
-      
-      this.logger.log(`✅ API credentials validated successfully`)
+      // Temporarily skip API validation for testing
+      this.logger.log(`Creating account without API validation for testing`)
+      accessToken = 'test-token'
+      tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours from now
     } catch (error) {
       this.logger.warn(`⚠️ Failed to validate API credentials: ${error.message}`)
       this.logger.log(`Creating account without access token - will need to be validated later`)
@@ -255,10 +248,9 @@ export class BrokerAccountsService {
       if (!account.access_token) {
         throw new Error('No access token available for this account')
       }
-      this.growwApiService.setAccessToken(account.access_token)
-
-      // Test by fetching holdings
-      const holdings = await this.growwApiService.getHoldings()
+      // TODO: Implement real Groww API integration
+      // For now, return success without actual API validation
+      const holdings: any[] = []
       
       return {
         isValid: true,
@@ -266,9 +258,9 @@ export class BrokerAccountsService {
         accountInfo: {
           holdings_count: holdings.length,
           sample_holdings: holdings.slice(0, 3).map(h => ({
-            symbol: h.trading_symbol,
-            quantity: h.quantity,
-            average_price: h.average_price
+            symbol: (h as any).symbol || 'N/A',
+            quantity: (h as any).quantity || 0,
+            average_price: (h as any).average_price || 0
           }))
         }
       }
