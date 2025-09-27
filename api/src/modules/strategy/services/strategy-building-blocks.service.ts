@@ -17,7 +17,7 @@ export interface IndicatorValue {
 }
 
 export interface StrategyCondition {
-  type: 'INDICATOR_COMPARISON' | 'PRICE_CONDITION' | 'VOLUME_CONDITION' | 'TIME_CONDITION' | 'CUSTOM'
+  type: 'INDICATOR_COMPARISON' | 'INDICATOR_THRESHOLD' | 'PRICE_CONDITION' | 'VOLUME_CONDITION' | 'TIME_CONDITION' | 'CUSTOM'
   operator: 'GT' | 'LT' | 'GTE' | 'LTE' | 'EQ' | 'NEQ'
   leftOperand: any
   rightOperand: any
@@ -60,6 +60,9 @@ export class StrategyBuildingBlocksService {
       switch (condition.type) {
         case 'INDICATOR_COMPARISON':
           return this.evaluateIndicatorComparison(condition, context.indicators || {})
+
+        case 'INDICATOR_THRESHOLD':
+          return this.evaluateIndicatorThreshold(condition, context.indicators || {})
 
         case 'PRICE_CONDITION':
           return this.evaluatePriceCondition(condition, context.candle)
@@ -257,9 +260,26 @@ export class StrategyBuildingBlocksService {
   ): Promise<boolean> {
     const { leftOperand, operator, rightOperand } = condition
 
-    // leftOperand should be indicator name, rightOperand should be value or another indicator
-    const leftValue = this.getIndicatorValue(leftOperand, indicators)
-    const rightValue = this.getComparisonValue(rightOperand, indicators)
+    const leftValue = this.getIndicatorOrFieldValue(leftOperand, indicators)
+    const rightValue = this.getIndicatorOrFieldValue(rightOperand, indicators)
+
+    if (leftValue === null || rightValue === null) {
+      return false
+    }
+
+    return this.compareValues(leftValue, rightValue, operator)
+  }
+
+  private async evaluateIndicatorThreshold(
+    condition: StrategyCondition,
+    indicators: Record<string, IndicatorValue>
+  ): Promise<boolean> {
+    const { leftOperand, operator, rightOperand } = condition
+
+    const leftValue = this.getIndicatorOrFieldValue(leftOperand, indicators)
+    const rightValue = typeof rightOperand === 'number'
+      ? rightOperand
+      : this.getIndicatorOrFieldValue(rightOperand, indicators)
 
     if (leftValue === null || rightValue === null) {
       return false
@@ -387,32 +407,40 @@ export class StrategyBuildingBlocksService {
   /**
    * Helper method to get indicator value
    */
-  private getIndicatorValue(
+  private getIndicatorOrFieldValue(
     operand: any,
     indicators: Record<string, IndicatorValue>
   ): number | null {
-    if (typeof operand === 'string' && indicators[operand]) {
-      return indicators[operand].value
-    }
     if (typeof operand === 'number') {
       return operand
     }
-    return null
-  }
 
-  /**
-   * Helper method to get comparison value
-   */
-  private getComparisonValue(
-    operand: any,
-    indicators: Record<string, IndicatorValue>
-  ): number | null {
-    if (typeof operand === 'string' && indicators[operand]) {
-      return indicators[operand].value
+    if (typeof operand === 'string') {
+      const [indicatorKey, ...fieldParts] = operand.split('.')
+      const indicator = indicators[indicatorKey]
+
+      if (!indicator) {
+        return null
+      }
+
+      if (fieldParts.length === 0) {
+        return indicator.value
+      }
+
+      let current: any = indicator
+      for (const part of fieldParts) {
+        if (current && part in current) {
+          current = current[part]
+        } else if (current?.additionalData && part in current.additionalData) {
+          current = current.additionalData[part]
+        } else {
+          return null
+        }
+      }
+
+      return typeof current === 'number' ? current : null
     }
-    if (typeof operand === 'number') {
-      return operand
-    }
+
     return null
   }
 

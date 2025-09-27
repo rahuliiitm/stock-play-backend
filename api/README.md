@@ -1,3 +1,133 @@
+# StockPlay Algorithmic Trading Backend - Strategy Integration Guide
+
+## EMA-Gap ATR Trend Strategy
+
+The backend now has a configurable EMA-gap trend-following strategy that operates on 15-minute (configurable) NIFTY candles. It relies on the updated trading and indicator pipelines.
+
+### Key Components
+
+- `TradingModule`
+  * `LiveDataFeedService` — polls Groww API and emits `trading.liveData` events.
+  * `CandleAggregationService` — stores 1m and 15m candles (with Redis-based aggregation).
+  * `CandleQueryService` — convenience service for fetching historical candles from Postgres.
+
+- `IndicatorsModule`
+  * Providers added for `EMA`, `ATR`, and `ADX` alongside existing RSI.
+  * `IndicatorProviderRegistryService` exposes them for on-demand calculations or scheduled jobs.
+
+- `StrategyModule`
+  * `EmaGapAtrStrategyService` — pure calculation engine (EMA, ATR, RSI, ADX, gap, slope, pyramiding metadata).
+  * `StrategySignalListenerService` — listens to `trading.strategyEvaluation`, filters enabled `EMA_GAP_ATR` strategies, runs the evaluation, and emits `strategy.signal` events.
+  * `TradingStrategyRunnerService` — callable helper to run a strategy immediately (used by background jobs/tests).
+
+### Data Flow
+
+1. `trading.liveData` → aggregated into 15m candles and cached in Redis/Postgres.
+2. `trading.candleAggregated` → `trading.indicatorUpdate` → `trading.strategyEvaluation`.
+3. `StrategySignalListenerService` reacts to `trading.strategyEvaluation`, loads active strategies for the symbol, fetches candles via `CandleQueryService`, runs `EmaGapAtrStrategyService`, and emits `strategy.signal` events.
+4. Downstream listeners (e.g. execution engines) can subscribe to `strategy.signal` to place trades.
+
+### Strategy Configuration
+
+Persisted in `Strategy.config` JSON. Example payload:
+
+```json
+{
+  "strategyType": "EMA_GAP_ATR",
+  "parameters": {
+    "timeframe": "15m",
+    "emaFastPeriod": 9,
+    "emaSlowPeriod": 20,
+    "atrPeriod": 14,
+    "minGapThreshold": 0,
+    "minGapMultiplier": 0.3,
+    "slopeLookback": 3,
+    "slopeMin": 0,
+    "rsiPeriod": 14,
+    "rsiThreshold": 50,
+    "adxPeriod": 14,
+    "adxThreshold": 25,
+    "multiplier": 0.6,
+    "maxLots": 3,
+    "trailingAtrMultiplier": 1,
+    "optionsEnabled": true,
+    "callStrikes": "ATM,ATM+1",
+    "putStrikes": "ATM,ATM-1",
+    "lotSize": 50,
+    "strikeIncrement": 50
+  }
+}
+```
+
+### Option Strike Selection
+
+The system now supports configurable option strike selection for Indian markets:
+
+- **Expiry**: Automatically calculates next Tuesday expiry (NIFTY standard)
+- **Strike Calculation**: ATM strikes based on current LTP, rounded to nearest 50-point increment
+- **Strike Types**: 
+  - `ATM`: At-the-money (closest to current price)
+  - `ATM+1`: One increment above ATM
+  - `ATM-1`: One increment below ATM
+  - `OTM`: Out-of-the-money (higher for calls, lower for puts)
+  - `ITM`: In-the-money (lower for calls, higher for puts)
+
+**Example**: If NIFTY LTP is 24,567, ATM strike = 24,550 (nearest 50-point increment)
+- ATM+1 = 24,600
+- ATM-1 = 24,500
+- Generated symbols: `NIFTY25SEP24550CE`, `NIFTY25SEP24600CE`, etc.
+
+### Black Box Architecture Implementation
+
+The system now follows strict black box architecture principles for testing and backtesting:
+
+#### Environment-Based Provider Selection
+```bash
+# For backtesting with CSV data
+export DATA_PROVIDER_MODE=csv
+export CSV_DATA_DIR=./data
+export ORDER_EXECUTION_MODE=mock
+
+# For live trading with Groww API
+export DATA_PROVIDER_MODE=groww
+export ORDER_EXECUTION_MODE=groww
+```
+
+#### Backtesting API
+```bash
+# Run backtest via REST API
+POST /api/backtest/ema-gap-atr
+{
+  "symbol": "NIFTY",
+  "timeframe": "15m",
+  "startDate": "2024-01-01",
+  "endDate": "2024-12-31",
+  "initialBalance": 1000000,
+  "strategyConfig": { ... }
+}
+```
+
+#### Module Boundaries
+- **Data Layer**: Abstract `MarketDataProvider` interface with CSV and Groww implementations
+- **Execution Layer**: Abstract `OrderExecutionProvider` interface with Mock and Groww implementations
+- **Strategy Layer**: Pure calculation engine with no external dependencies
+- **Orchestration Layer**: Coordinates data, strategy, and execution without knowing implementations
+
+#### Testing Benefits
+- Complete isolation of strategy logic from data sources
+- Ability to test with historical CSV data
+- Mock order execution for safe testing
+- Replaceable components without code changes
+- Black box testing at interface boundaries
+
+### Extending/Testing
+
+- Use environment variables to switch between CSV/Groww data and Mock/Groww execution
+- Place CSV files in `./data` directory with format: `SYMBOL_TIMEFRAME.csv`
+- Register strategies through existing management endpoints
+- Run backtests via `/api/backtest/ema-gap-atr` endpoint
+- All modules can be tested in isolation with mock dependencies
+
 <p align="center">
   <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
 </p>

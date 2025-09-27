@@ -18,6 +18,10 @@ import { StrategyRecoveryService } from './services/strategy-recovery.service'
 import { StrategyWorkerManager } from './services/strategy-worker-manager.service'
 import { StrategyBuildingBlocksService } from './services/strategy-building-blocks.service'
 import { StrategyRunnerService } from './services/strategy-runner.service'
+import { EmaGapAtrStrategyService } from './services/ema-gap-atr-strategy.service'
+import { StrategySignalListenerService } from './services/strategy-signal-listener.service'
+import { TradingStrategyRunnerService } from './services/trading-strategy-runner.service'
+import { TradingModule } from '../trading/trading.module'
 
 // Controllers
 import { StrategyController } from './controllers/strategy.controller'
@@ -28,6 +32,7 @@ import { StrategyManagementController } from './controllers/strategy-management.
   imports: [
     ConfigModule,
     BrokerModule,
+    TradingModule,
     TypeOrmModule.forFeature([
       Strategy,
       StrategyRuntimeState,
@@ -40,7 +45,7 @@ import { StrategyManagementController } from './controllers/strategy-management.
   controllers: [
     StrategyController,
     StrategyHealthController,
-    StrategyManagementController
+    StrategyManagementController,
   ],
   providers: [
     StrategyStatePersistenceService,
@@ -48,6 +53,9 @@ import { StrategyManagementController } from './controllers/strategy-management.
     StrategyWorkerManager,
     StrategyBuildingBlocksService,
     StrategyRunnerService,
+    EmaGapAtrStrategyService,
+    StrategySignalListenerService,
+    TradingStrategyRunnerService,
     {
       provide: 'REDIS_CLIENT',
       useFactory: (): Redis => {

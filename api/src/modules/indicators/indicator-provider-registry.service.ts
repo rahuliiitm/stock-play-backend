@@ -5,6 +5,9 @@ import { SmaProvider } from './providers/sma.provider'
 import { MacdProvider } from './providers/macd.provider'
 import { BollingerBandsProvider } from './providers/bollinger-bands.provider'
 import { SupertrendProvider } from './providers/supertrend.provider'
+import { EmaProvider } from './providers/ema.provider'
+import { AtrProvider } from './providers/atr.provider'
+import { AdxProvider } from './providers/adx.provider'
 
 @Injectable()
 export class IndicatorProviderRegistryService implements IndicatorProviderRegistry {
@@ -17,6 +20,9 @@ export class IndicatorProviderRegistryService implements IndicatorProviderRegist
     this.register(new MacdProvider())
     this.register(new BollingerBandsProvider())
     this.register(new SupertrendProvider())
+    this.register(new EmaProvider())
+    this.register(new AtrProvider())
+    this.register(new AdxProvider())
   }
 
   register(provider: IndicatorProvider): void {

@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/commo
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { LiveDataFeedService, LiveCandleData } from './live-data-feed.service';
 import { CandleAggregationService } from './candle-aggregation.service';
+import { CandleQueryService } from './candle-query.service';
 import { TimeframeType } from '../schemas/candle.schema';
 
 interface LiveDataEvent {
@@ -19,6 +20,7 @@ export class TradingEventListenerService implements OnModuleInit, OnModuleDestro
     private eventEmitter: EventEmitter2,
     private liveDataFeedService: LiveDataFeedService,
     private candleAggregationService: CandleAggregationService,
+    private candleQueryService: CandleQueryService,
   ) {}
 
   async onModuleInit() {
@@ -119,6 +121,7 @@ export class TradingEventListenerService implements OnModuleInit, OnModuleDestro
    */
   @OnEvent('trading.strategyEvaluation')
   async handleStrategyEvaluation(event: {
+    subscriptionId?: string;
     symbol: string;
     timestamp: number;
     timeframes: TimeframeType[];
@@ -128,12 +131,10 @@ export class TradingEventListenerService implements OnModuleInit, OnModuleDestro
     try {
       this.logger.debug(`Evaluating strategies for ${event.symbol}`);
 
-      // This is where trading strategies would be evaluated
-      // For now, just emit an event for potential trade signals
-      this.eventEmitter.emit('trading.strategyEvaluated', {
+      this.eventEmitter.emit('strategy.evaluate', {
+        subscriptionId: event.subscriptionId,
         symbol: event.symbol,
         timestamp: event.timestamp,
-        signal: null, // No signal generated
         timeframes: event.timeframes,
       });
 
@@ -145,53 +146,15 @@ export class TradingEventListenerService implements OnModuleInit, OnModuleDestro
   /**
    * Handle strategy evaluation completion
    */
-  @OnEvent('trading.strategyEvaluated')
-  async handleStrategyEvaluated(event: {
-    symbol: string;
-    timestamp: number;
+  @OnEvent('strategy.signal')
+  async handleStrategySignal(event: {
+    strategyId: string;
     signal: any;
-    timeframes: TimeframeType[];
+    diagnostics?: any;
   }) {
     if (!this.isProcessing) return;
 
-    try {
-      if (event.signal) {
-        this.logger.log(`Trading signal generated for ${event.symbol}:`, event.signal);
-
-        // Emit event for trade execution
-        this.eventEmitter.emit('trading.signalGenerated', {
-          symbol: event.symbol,
-          timestamp: event.timestamp,
-          signal: event.signal,
-        });
-      }
-
-    } catch (error) {
-      this.logger.error(`Failed to handle strategy evaluation for ${event.symbol}:`, error);
-    }
-  }
-
-  /**
-   * Handle trading signal events
-   */
-  @OnEvent('trading.signalGenerated')
-  async handleSignalGenerated(event: {
-    symbol: string;
-    timestamp: number;
-    signal: any;
-  }) {
-    if (!this.isProcessing) return;
-
-    try {
-      this.logger.log(`Processing trading signal for ${event.symbol}:`, event.signal);
-
-      // This is where trade orders would be generated and executed
-      // For now, just log the signal
-      this.logger.log(`🚨 TRADE SIGNAL: ${event.symbol} - ${JSON.stringify(event.signal)}`);
-
-    } catch (error) {
-      this.logger.error(`Failed to handle trading signal for ${event.symbol}:`, error);
-    }
+    this.logger.log(`Strategy ${event.strategyId} produced signal`, event.signal);
   }
 
   /**

@@ -7,7 +7,8 @@ import {
   REDIS_KEYS,
   getCandleEntity,
   CandleEntity,
-  Candle1m
+  Candle1m,
+  Candle15m
 } from '../schemas/candle.schema';
 import { LiveCandleData } from './live-data-feed.service';
 
@@ -28,6 +29,8 @@ export class CandleAggregationService {
   constructor(
     @InjectRepository(Candle1m)
     private candle1mRepository: Repository<Candle1m>,
+    @InjectRepository(Candle15m)
+    private candle15mRepository: Repository<Candle15m>,
   ) {}
 
   /**
@@ -190,6 +193,8 @@ export class CandleAggregationService {
     switch (entityName) {
       case 'Candle1m':
         return this.candle1mRepository as any;
+      case 'Candle15m':
+        return this.candle15mRepository as any;
       default:
         throw new Error(`Repository not found for entity ${entityName}`);
     }

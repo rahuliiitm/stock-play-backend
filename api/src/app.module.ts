@@ -11,6 +11,7 @@ import { IndicatorsModule } from './modules/indicators/indicators.module'
 import { UsersModule } from './modules/users/users.module'
 import { TradingModule } from './modules/trading/trading.module'
 import { StrategyModule } from './modules/strategy/strategy.module'
+import { BacktestModule } from './modules/backtest/backtest.module'
 import { BrokerModule } from './modules/broker/broker.module'
 import { PortfolioSchedulerModule } from './modules/portfolio-scheduler/portfolio-scheduler.module'
 import { HealthModule } from './health/health.module'
@@ -41,6 +42,7 @@ import { HealthModule } from './health/health.module'
     UsersModule,
     TradingModule,
     StrategyModule,
+    BacktestModule,
     BrokerModule,
     PortfolioSchedulerModule,
     HealthModule,
