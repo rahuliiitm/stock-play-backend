@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { LiveDataFeedService, LiveCandleData } from './live-data-feed.service';
 import { CandleAggregationService } from './candle-aggregation.service';
@@ -12,7 +17,9 @@ interface LiveDataEvent {
 }
 
 @Injectable()
-export class TradingEventListenerService implements OnModuleInit, OnModuleDestroy {
+export class TradingEventListenerService
+  implements OnModuleInit, OnModuleDestroy
+{
   private readonly logger = new Logger(TradingEventListenerService.name);
   private isProcessing = false;
 
@@ -41,10 +48,15 @@ export class TradingEventListenerService implements OnModuleInit, OnModuleDestro
     if (!this.isProcessing) return;
 
     try {
-      this.logger.debug(`Processing live data for ${event.data.symbol} on subscription ${event.subscriptionId}`);
+      this.logger.debug(
+        `Processing live data for ${event.data.symbol} on subscription ${event.subscriptionId}`,
+      );
 
       // Process the candle data through aggregation
-      await this.candleAggregationService.processLiveCandle(event.data, event.timeframes);
+      await this.candleAggregationService.processLiveCandle(
+        event.data,
+        event.timeframes,
+      );
 
       // Emit event for indicators to process
       this.eventEmitter.emit('trading.candleAggregated', {
@@ -55,10 +67,14 @@ export class TradingEventListenerService implements OnModuleInit, OnModuleDestro
         timeframes: event.timeframes,
       });
 
-      this.logger.debug(`Successfully processed live data for ${event.data.symbol}`);
-
+      this.logger.debug(
+        `Successfully processed live data for ${event.data.symbol}`,
+      );
     } catch (error) {
-      this.logger.error(`Failed to process live data for ${event.data.symbol}:`, error);
+      this.logger.error(
+        `Failed to process live data for ${event.data.symbol}:`,
+        error,
+      );
     }
   }
 
@@ -76,7 +92,9 @@ export class TradingEventListenerService implements OnModuleInit, OnModuleDestro
     if (!this.isProcessing) return;
 
     try {
-      this.logger.debug(`Candle aggregated for ${event.symbol} - triggering indicator calculations`);
+      this.logger.debug(
+        `Candle aggregated for ${event.symbol} - triggering indicator calculations`,
+      );
 
       // Emit event for strategy evaluation
       this.eventEmitter.emit('trading.indicatorUpdate', {
@@ -84,9 +102,11 @@ export class TradingEventListenerService implements OnModuleInit, OnModuleDestro
         timestamp: event.timestamp,
         timeframes: event.timeframes,
       });
-
     } catch (error) {
-      this.logger.error(`Failed to handle candle aggregation for ${event.symbol}:`, error);
+      this.logger.error(
+        `Failed to handle candle aggregation for ${event.symbol}:`,
+        error,
+      );
     }
   }
 
@@ -102,7 +122,9 @@ export class TradingEventListenerService implements OnModuleInit, OnModuleDestro
     if (!this.isProcessing) return;
 
     try {
-      this.logger.debug(`Indicators updated for ${event.symbol} - triggering strategy evaluation`);
+      this.logger.debug(
+        `Indicators updated for ${event.symbol} - triggering strategy evaluation`,
+      );
 
       // Emit event for strategy processing
       this.eventEmitter.emit('trading.strategyEvaluation', {
@@ -110,9 +132,11 @@ export class TradingEventListenerService implements OnModuleInit, OnModuleDestro
         timestamp: event.timestamp,
         timeframes: event.timeframes,
       });
-
     } catch (error) {
-      this.logger.error(`Failed to handle indicator update for ${event.symbol}:`, error);
+      this.logger.error(
+        `Failed to handle indicator update for ${event.symbol}:`,
+        error,
+      );
     }
   }
 
@@ -137,9 +161,11 @@ export class TradingEventListenerService implements OnModuleInit, OnModuleDestro
         timestamp: event.timestamp,
         timeframes: event.timeframes,
       });
-
     } catch (error) {
-      this.logger.error(`Failed to evaluate strategies for ${event.symbol}:`, error);
+      this.logger.error(
+        `Failed to evaluate strategies for ${event.symbol}:`,
+        error,
+      );
     }
   }
 
@@ -154,7 +180,10 @@ export class TradingEventListenerService implements OnModuleInit, OnModuleDestro
   }) {
     if (!this.isProcessing) return;
 
-    this.logger.log(`Strategy ${event.strategyId} produced signal`, event.signal);
+    this.logger.log(
+      `Strategy ${event.strategyId} produced signal`,
+      event.signal,
+    );
   }
 
   /**

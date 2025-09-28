@@ -63,24 +63,24 @@ import { TradingController } from './controllers/trading.controller';
     {
       provide: 'DATA_PROVIDER',
       useFactory: (httpService: HttpService, configService: ConfigService) => {
-        const mode = process.env.DATA_PROVIDER_MODE || 'csv'
+        const mode = process.env.DATA_PROVIDER_MODE || 'csv';
         if (mode === 'groww') {
-          return new GrowwDataProvider(httpService, configService)
+          return new GrowwDataProvider(httpService, configService);
         }
-        return new CsvDataProvider()
+        return new CsvDataProvider();
       },
-      inject: [HttpService, ConfigService]
+      inject: [HttpService, ConfigService],
     },
     {
       provide: 'ORDER_EXECUTION',
       useFactory: (httpService: HttpService, configService: ConfigService) => {
-        const mode = process.env.ORDER_EXECUTION_MODE || 'mock'
+        const mode = process.env.ORDER_EXECUTION_MODE || 'mock';
         if (mode === 'groww') {
-          return new GrowwOrderExecutionProvider(httpService, configService)
+          return new GrowwOrderExecutionProvider(httpService, configService);
         }
-        return new MockOrderExecutionProvider()
+        return new MockOrderExecutionProvider();
       },
-      inject: [HttpService, ConfigService]
+      inject: [HttpService, ConfigService],
     },
     CsvDataProvider,
     GrowwDataProvider,

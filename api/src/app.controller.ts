@@ -15,7 +15,7 @@ export class AppController {
     return {
       status: 'ok',
       timestamp: new Date().toISOString(),
-      uptime: process.uptime()
+      uptime: process.uptime(),
     };
   }
 
@@ -26,16 +26,14 @@ export class AppController {
       return {
         message: 'Database connection test',
         timestamp: new Date().toISOString(),
-        status: 'Database connection available'
+        status: 'Database connection available',
       };
     } catch (error) {
       return {
         message: 'Database connection failed',
         error: error.message,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
     }
   }
-
-
 }

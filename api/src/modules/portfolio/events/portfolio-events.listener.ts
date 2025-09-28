@@ -1,20 +1,22 @@
-import { Injectable, Logger } from '@nestjs/common'
-import { OnEvent } from '@nestjs/event-emitter'
+import { Injectable, Logger } from '@nestjs/common';
+import { OnEvent } from '@nestjs/event-emitter';
 import type {
   PortfolioCreatedEvent,
   PortfolioUpdatedEvent,
   HoldingAddedEvent,
   HoldingRemovedEvent,
   PortfolioSnapshotCreatedEvent,
-} from './portfolio-events.service'
+} from './portfolio-events.service';
 
 @Injectable()
 export class PortfolioEventsListener {
-  private readonly logger = new Logger(PortfolioEventsListener.name)
+  private readonly logger = new Logger(PortfolioEventsListener.name);
 
   @OnEvent('portfolio.created')
   async handlePortfolioCreated(event: PortfolioCreatedEvent): Promise<void> {
-    this.logger.log(`Portfolio created: ${event.portfolioName} for user ${event.userId}`)
+    this.logger.log(
+      `Portfolio created: ${event.portfolioName} for user ${event.userId}`,
+    );
 
     // TODO: Implement additional actions:
     // - Send welcome notification
@@ -25,7 +27,9 @@ export class PortfolioEventsListener {
 
   @OnEvent('portfolio.updated')
   async handlePortfolioUpdated(event: PortfolioUpdatedEvent): Promise<void> {
-    this.logger.log(`Portfolio updated: ${event.portfolioId} for user ${event.userId}`)
+    this.logger.log(
+      `Portfolio updated: ${event.portfolioId} for user ${event.userId}`,
+    );
 
     // TODO: Implement additional actions:
     // - Invalidate cached data
@@ -35,7 +39,9 @@ export class PortfolioEventsListener {
 
   @OnEvent('portfolio.holding.added')
   async handleHoldingAdded(event: HoldingAddedEvent): Promise<void> {
-    this.logger.log(`Holding added: ${event.symbol} (${event.quantity}) to portfolio ${event.portfolioId}`)
+    this.logger.log(
+      `Holding added: ${event.symbol} (${event.quantity}) to portfolio ${event.portfolioId}`,
+    );
 
     // TODO: Implement additional actions:
     // - Update portfolio statistics
@@ -46,7 +52,9 @@ export class PortfolioEventsListener {
 
   @OnEvent('portfolio.holding.removed')
   async handleHoldingRemoved(event: HoldingRemovedEvent): Promise<void> {
-    this.logger.log(`Holding removed: ${event.symbol} (${event.quantity}) from portfolio ${event.portfolioId}`)
+    this.logger.log(
+      `Holding removed: ${event.symbol} (${event.quantity}) from portfolio ${event.portfolioId}`,
+    );
 
     // TODO: Implement additional actions:
     // - Update portfolio statistics
@@ -56,8 +64,12 @@ export class PortfolioEventsListener {
   }
 
   @OnEvent('portfolio.snapshot.created')
-  async handlePortfolioSnapshotCreated(event: PortfolioSnapshotCreatedEvent): Promise<void> {
-    this.logger.debug(`Portfolio snapshot created: ${event.portfolioId} for ${event.date.toISOString()}`)
+  async handlePortfolioSnapshotCreated(
+    event: PortfolioSnapshotCreatedEvent,
+  ): Promise<void> {
+    this.logger.debug(
+      `Portfolio snapshot created: ${event.portfolioId} for ${event.date.toISOString()}`,
+    );
 
     // TODO: Implement additional actions:
     // - Calculate performance metrics
@@ -66,10 +78,11 @@ export class PortfolioEventsListener {
     // - Send periodic performance notifications
   }
 
-
   @OnEvent('broker.account.linked')
   async handleBrokerAccountLinked(event: any): Promise<void> {
-    this.logger.log(`Broker account linked: ${event.broker} for user ${event.userId}`)
+    this.logger.log(
+      `Broker account linked: ${event.broker} for user ${event.userId}`,
+    );
 
     // TODO: Implement additional actions:
     // - Send confirmation notification
@@ -80,7 +93,9 @@ export class PortfolioEventsListener {
 
   @OnEvent('broker.account.unlinked')
   async handleBrokerAccountUnlinked(event: any): Promise<void> {
-    this.logger.log(`Broker account unlinked: ${event.broker} for user ${event.userId}`)
+    this.logger.log(
+      `Broker account unlinked: ${event.broker} for user ${event.userId}`,
+    );
 
     // TODO: Implement additional actions:
     // - Clean up broker-related data
@@ -91,8 +106,10 @@ export class PortfolioEventsListener {
 
   @OnEvent('broker.sync.completed')
   async handleBrokerSyncCompleted(event: any): Promise<void> {
-    const status = event.success ? 'successful' : 'failed'
-    this.logger.log(`Broker sync ${status}: ${event.holdingsCount} holdings for user ${event.userId}`)
+    const status = event.success ? 'successful' : 'failed';
+    this.logger.log(
+      `Broker sync ${status}: ${event.holdingsCount} holdings for user ${event.userId}`,
+    );
 
     // TODO: Implement additional actions:
     // - Send sync status notification
@@ -101,4 +118,3 @@ export class PortfolioEventsListener {
     // - Update portfolio with new data
   }
 }
-

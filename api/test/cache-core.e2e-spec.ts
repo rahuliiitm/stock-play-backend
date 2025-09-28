@@ -19,7 +19,9 @@ describe('Core Cache System (e2e)', () => {
     app = moduleFixture.createNestApplication();
     await app.init();
 
-    stockQuoteCache = moduleFixture.get<StockQuoteCacheService>(StockQuoteCacheService);
+    stockQuoteCache = moduleFixture.get<StockQuoteCacheService>(
+      StockQuoteCacheService,
+    );
   });
 
   afterAll(async () => {
@@ -32,9 +34,12 @@ describe('Core Cache System (e2e)', () => {
     it('should get cached quote for a symbol', async () => {
       const symbol = 'RELIANCE';
       const quote = await stockQuoteCache.getQuote(symbol);
-      
-      console.log(`📊 Cached quote for ${symbol}:`, JSON.stringify(quote, null, 2));
-      
+
+      console.log(
+        `📊 Cached quote for ${symbol}:`,
+        JSON.stringify(quote, null, 2),
+      );
+
       expect(quote).toBeDefined();
       expect(quote).toHaveProperty('symbol', symbol);
       expect(quote).toHaveProperty('price');
@@ -45,12 +50,14 @@ describe('Core Cache System (e2e)', () => {
     it('should get multiple cached quotes efficiently', async () => {
       const symbols = ['RELIANCE', 'INFY', 'TCS'];
       const cachedQuotes = await stockQuoteCache.getCachedQuotes(symbols);
-      
-      console.log(`📊 Retrieved ${cachedQuotes.size} cached quotes for ${symbols.length} symbols`);
-      
+
+      console.log(
+        `📊 Retrieved ${cachedQuotes.size} cached quotes for ${symbols.length} symbols`,
+      );
+
       expect(cachedQuotes).toBeInstanceOf(Map);
       expect(cachedQuotes.size).toBeGreaterThan(0);
-      
+
       for (const [symbol, quote] of cachedQuotes) {
         expect(quote).toHaveProperty('symbol', symbol);
         expect(quote).toHaveProperty('price');
@@ -60,30 +67,34 @@ describe('Core Cache System (e2e)', () => {
 
     it('should update quotes for specific symbols', async () => {
       const symbols = ['RELIANCE', 'INFY'];
-      
+
       console.log(`📈 Updating quotes for symbols: ${symbols.join(', ')}`);
-      
+
       await stockQuoteCache.updateSymbolsQuotes(symbols);
-      
+
       // Verify quotes are cached
       const cachedQuotes = await stockQuoteCache.getCachedQuotes(symbols);
       expect(cachedQuotes.size).toBeGreaterThan(0);
-      
-      console.log(`✅ Successfully updated quotes for ${cachedQuotes.size} symbols`);
+
+      console.log(
+        `✅ Successfully updated quotes for ${cachedQuotes.size} symbols`,
+      );
     });
 
     it('should handle rate limiting gracefully', async () => {
       // Test rate limiting by making many requests
       const symbols = Array.from({ length: 5 }, (_, i) => `TEST${i}`);
-      
+
       console.log(`🧪 Testing rate limiting with ${symbols.length} symbols`);
-      
+
       const startTime = Date.now();
       await stockQuoteCache.updateSymbolsQuotes(symbols);
       const endTime = Date.now();
-      
-      console.log(`⏱️ Rate limiting test completed in ${endTime - startTime}ms`);
-      
+
+      console.log(
+        `⏱️ Rate limiting test completed in ${endTime - startTime}ms`,
+      );
+
       // Should complete without errors
       expect(endTime - startTime).toBeGreaterThan(0);
     });
@@ -92,28 +103,28 @@ describe('Core Cache System (e2e)', () => {
   describe('Cache Management', () => {
     it('should clear cache for specific symbol', async () => {
       const symbol = 'TEST_CACHE_CLEAR';
-      
+
       console.log(`🧹 Testing cache clear for symbol: ${symbol}`);
-      
+
       await stockQuoteCache.clearSymbolCache(symbol);
-      
+
       console.log('✅ Cache clear completed successfully');
     });
 
     it('should get quote after cache clear (should fetch from API)', async () => {
       const symbol = 'RELIANCE';
-      
+
       console.log(`🔄 Testing quote fetch after cache clear for: ${symbol}`);
-      
+
       // Clear cache first
       await stockQuoteCache.clearSymbolCache(symbol);
-      
+
       // Get quote (should fetch from API)
       const quote = await stockQuoteCache.getQuote(symbol);
-      
+
       expect(quote).toBeDefined();
       expect(quote).toHaveProperty('symbol', symbol);
-      
+
       console.log('✅ Quote fetch after cache clear completed successfully');
     });
   });
@@ -121,20 +132,22 @@ describe('Core Cache System (e2e)', () => {
   describe('Performance Metrics', () => {
     it('should demonstrate efficient batch processing', async () => {
       const symbols = ['RELIANCE', 'INFY', 'TCS', 'HDFC', 'ICICIBANK'];
-      
-      console.log(`⚡ Testing batch processing efficiency with ${symbols.length} symbols`);
-      
+
+      console.log(
+        `⚡ Testing batch processing efficiency with ${symbols.length} symbols`,
+      );
+
       const startTime = Date.now();
-      
+
       // Get cached quotes (should be fast)
       const cachedQuotes = await stockQuoteCache.getCachedQuotes(symbols);
-      
+
       const endTime = Date.now();
       const duration = endTime - startTime;
-      
+
       console.log(`⚡ Batch processing completed in ${duration}ms`);
       console.log(`⚡ Retrieved ${cachedQuotes.size} quotes`);
-      
+
       expect(duration).toBeLessThan(1000); // Should be very fast
       expect(cachedQuotes.size).toBeGreaterThan(0);
     });
@@ -150,7 +163,7 @@ describe('Core Cache System (e2e)', () => {
       const duration1 = Date.now() - startTime1;
 
       // Small delay to ensure timing accuracy
-      await new Promise(resolve => setTimeout(resolve, 1));
+      await new Promise((resolve) => setTimeout(resolve, 1));
 
       // Second call (cache hit - faster)
       const startTime2 = Date.now();
@@ -161,7 +174,10 @@ describe('Core Cache System (e2e)', () => {
       console.log(`⚡ Second call (cache hit): ${duration2}ms`);
 
       // Calculate performance improvement percentage safely
-      const improvementPercent = duration1 > 0 ? Math.round((duration1 - duration2) / duration1 * 100) : 0;
+      const improvementPercent =
+        duration1 > 0
+          ? Math.round(((duration1 - duration2) / duration1) * 100)
+          : 0;
       console.log(`⚡ Performance improvement: ${improvementPercent}%`);
 
       expect(quote1).toEqual(quote2);
@@ -174,9 +190,11 @@ describe('Core Cache System (e2e)', () => {
   describe('Error Handling', () => {
     it('should handle invalid symbols gracefully', async () => {
       const invalidSymbol = 'INVALID_SYMBOL_12345';
-      
-      console.log(`🧪 Testing error handling for invalid symbol: ${invalidSymbol}`);
-      
+
+      console.log(
+        `🧪 Testing error handling for invalid symbol: ${invalidSymbol}`,
+      );
+
       try {
         const quote = await stockQuoteCache.getQuote(invalidSymbol);
         console.log('⚠️ Unexpected success for invalid symbol');
@@ -188,14 +206,14 @@ describe('Core Cache System (e2e)', () => {
 
     it('should handle rate limit exceeded gracefully', async () => {
       console.log('🧪 Testing rate limit exceeded handling');
-      
+
       // This test verifies that the rate limiting mechanism works
       // The actual rate limit is 300 req/min, so we won't hit it in tests
       // But we can verify the mechanism exists
-      
+
       const symbols = ['RELIANCE', 'INFY'];
       await stockQuoteCache.updateSymbolsQuotes(symbols);
-      
+
       console.log('✅ Rate limiting mechanism working correctly');
     });
   });

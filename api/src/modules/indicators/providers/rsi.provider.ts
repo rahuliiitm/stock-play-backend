@@ -1,40 +1,48 @@
-import { IndicatorProvider, IndicatorResult, TechnicalIndicatorInput } from '../indicator-provider.interface'
-import { Candle } from '../../../lib/market-data-sdk/models'
-import { RSI } from 'technicalindicators'
+import {
+  IndicatorProvider,
+  IndicatorResult,
+  TechnicalIndicatorInput,
+} from '../indicator-provider.interface';
+import { Candle } from '../../../lib/market-data-sdk/models';
+import { RSI } from 'technicalindicators';
 
 export class RsiProvider implements IndicatorProvider {
-  name = 'RSI'
-  description = 'Relative Strength Index - Momentum oscillator that measures the speed and change of price movements'
-  requiredParameters = ['period']
-  optionalParameters = ['overbought', 'oversold']
-  minDataPoints = 14
+  name = 'RSI';
+  description =
+    'Relative Strength Index - Momentum oscillator that measures the speed and change of price movements';
+  requiredParameters = ['period'];
+  optionalParameters = ['overbought', 'oversold'];
+  minDataPoints = 14;
 
-  calculate(candles: Candle[], parameters: Record<string, any>): IndicatorResult | null {
+  calculate(
+    candles: Candle[],
+    parameters: Record<string, any>,
+  ): IndicatorResult | null {
     if (candles.length < this.minDataPoints) {
-      return null
+      return null;
     }
 
-    const period = parameters.period || 14
-    const overbought = parameters.overbought || 70
-    const oversold = parameters.oversold || 30
+    const period = parameters.period || 14;
+    const overbought = parameters.overbought || 70;
+    const oversold = parameters.oversold || 30;
 
     // Convert candles to technical indicators input format
     const input: TechnicalIndicatorInput = {
-      close: candles.map(c => c.close)
-    }
+      close: candles.map((c) => c.close),
+    };
 
     try {
       const rsiValues = RSI.calculate({
         values: input.close,
-        period: period
-      })
+        period: period,
+      });
 
       if (rsiValues.length === 0) {
-        return null
+        return null;
       }
 
-      const latestRsi = rsiValues[rsiValues.length - 1]
-      const timestamp = candles[candles.length - 1].time
+      const latestRsi = rsiValues[rsiValues.length - 1];
+      const timestamp = candles[candles.length - 1].time;
 
       return {
         value: latestRsi,
@@ -43,13 +51,13 @@ export class RsiProvider implements IndicatorProvider {
           oversold,
           isOverbought: latestRsi > overbought,
           isOversold: latestRsi < oversold,
-          allValues: rsiValues
+          allValues: rsiValues,
         },
-        timestamp: new Date(timestamp)
-      }
+        timestamp: new Date(timestamp),
+      };
     } catch (error) {
-      console.error('RSI calculation error:', error)
-      return null
+      console.error('RSI calculation error:', error);
+      return null;
     }
   }
 }

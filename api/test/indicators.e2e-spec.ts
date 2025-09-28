@@ -19,7 +19,9 @@ describe('Indicators System (e2e)', () => {
     app = moduleFixture.createNestApplication();
     await app.init();
 
-    indicatorRegistry = moduleFixture.get<IndicatorProviderRegistryService>(IndicatorProviderRegistryService);
+    indicatorRegistry = moduleFixture.get<IndicatorProviderRegistryService>(
+      IndicatorProviderRegistryService,
+    );
   });
 
   afterAll(async () => {
@@ -32,9 +34,12 @@ describe('Indicators System (e2e)', () => {
     it('should have registered indicator providers', () => {
       const providers = indicatorRegistry.getAll();
       const providerNames = indicatorRegistry.getNames();
-      
-      console.log(`📊 Found ${providers.length} indicator providers:`, providerNames);
-      
+
+      console.log(
+        `📊 Found ${providers.length} indicator providers:`,
+        providerNames,
+      );
+
       expect(providers.length).toBeGreaterThan(0);
       expect(providerNames).toContain('RSI');
       expect(providerNames).toContain('SMA');
@@ -44,9 +49,9 @@ describe('Indicators System (e2e)', () => {
 
     it('should provide RSI indicator info', () => {
       const rsiInfo = indicatorRegistry.getProviderInfo('RSI');
-      
+
       console.log('📊 RSI Indicator Info:', JSON.stringify(rsiInfo, null, 2));
-      
+
       expect(rsiInfo).toBeDefined();
       expect(rsiInfo.name).toBe('RSI');
       expect(rsiInfo.requiredParameters).toContain('period');
@@ -57,9 +62,9 @@ describe('Indicators System (e2e)', () => {
 
     it('should provide SMA indicator info', () => {
       const smaInfo = indicatorRegistry.getProviderInfo('SMA');
-      
+
       console.log('📊 SMA Indicator Info:', JSON.stringify(smaInfo, null, 2));
-      
+
       expect(smaInfo).toBeDefined();
       expect(smaInfo.name).toBe('SMA');
       expect(smaInfo.requiredParameters).toContain('period');
@@ -68,9 +73,9 @@ describe('Indicators System (e2e)', () => {
 
     it('should provide MACD indicator info', () => {
       const macdInfo = indicatorRegistry.getProviderInfo('MACD');
-      
+
       console.log('📊 MACD Indicator Info:', JSON.stringify(macdInfo, null, 2));
-      
+
       expect(macdInfo).toBeDefined();
       expect(macdInfo.name).toBe('MACD');
       expect(macdInfo.requiredParameters).toContain('fastPeriod');
@@ -81,9 +86,12 @@ describe('Indicators System (e2e)', () => {
 
     it('should provide Bollinger Bands indicator info', () => {
       const bbInfo = indicatorRegistry.getProviderInfo('BOLLINGER_BANDS');
-      
-      console.log('📊 Bollinger Bands Indicator Info:', JSON.stringify(bbInfo, null, 2));
-      
+
+      console.log(
+        '📊 Bollinger Bands Indicator Info:',
+        JSON.stringify(bbInfo, null, 2),
+      );
+
       expect(bbInfo).toBeDefined();
       expect(bbInfo.name).toBe('BOLLINGER_BANDS');
       expect(bbInfo.requiredParameters).toContain('period');
@@ -98,15 +106,15 @@ describe('Indicators System (e2e)', () => {
 
     it('should get all provider info', () => {
       const allInfo = indicatorRegistry.getAllProviderInfo();
-      
+
       console.log('📊 All Indicator Info:', JSON.stringify(allInfo, null, 2));
-      
+
       expect(allInfo).toBeDefined();
       expect(Array.isArray(allInfo)).toBe(true);
       expect(allInfo.length).toBeGreaterThan(0);
-      
+
       // Check that each provider has required fields
-      allInfo.forEach(provider => {
+      allInfo.forEach((provider) => {
         expect(provider).toHaveProperty('name');
         expect(provider).toHaveProperty('description');
         expect(provider).toHaveProperty('requiredParameters');

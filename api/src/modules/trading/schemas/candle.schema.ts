@@ -1,4 +1,11 @@
-import { Entity, Column, PrimaryGeneratedColumn, Index, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  Index,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 export type TimeframeType = '1m' | '5m' | '15m' | '30m' | '1h' | '4h' | '1d';
 
@@ -65,19 +72,36 @@ export class Candle4h extends BaseCandle {}
 export class Candle1d extends BaseCandle {}
 
 // Helper type for candle entities
-export type CandleEntity = Candle1m | Candle5m | Candle15m | Candle30m | Candle1h | Candle4h | Candle1d;
+export type CandleEntity =
+  | Candle1m
+  | Candle5m
+  | Candle15m
+  | Candle30m
+  | Candle1h
+  | Candle4h
+  | Candle1d;
 
 // Helper function to get entity class by timeframe
-export function getCandleEntity(timeframe: TimeframeType): new () => CandleEntity {
+export function getCandleEntity(
+  timeframe: TimeframeType,
+): new () => CandleEntity {
   switch (timeframe) {
-    case '1m': return Candle1m;
-    case '5m': return Candle5m;
-    case '15m': return Candle15m;
-    case '30m': return Candle30m;
-    case '1h': return Candle1h;
-    case '4h': return Candle4h;
-    case '1d': return Candle1d;
-    default: throw new Error(`Unknown timeframe: ${timeframe}`);
+    case '1m':
+      return Candle1m;
+    case '5m':
+      return Candle5m;
+    case '15m':
+      return Candle15m;
+    case '30m':
+      return Candle30m;
+    case '1h':
+      return Candle1h;
+    case '4h':
+      return Candle4h;
+    case '1d':
+      return Candle1d;
+    default:
+      throw new Error(`Unknown timeframe: ${timeframe}`);
   }
 }
 

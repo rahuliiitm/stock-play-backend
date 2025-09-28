@@ -1,40 +1,46 @@
-import { Column, CreateDateColumn, Entity, PrimaryColumn, UpdateDateColumn } from 'typeorm'
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  PrimaryColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity('stock_symbols')
 export class StockSymbol {
   @PrimaryColumn({ type: 'varchar', length: 16 })
-  symbol!: string
+  symbol!: string;
 
   @PrimaryColumn({ type: 'varchar', length: 16 })
-  exchange!: string
+  exchange!: string;
 
   @Column({ type: 'text', nullable: true })
-  name!: string | null
+  name!: string | null;
 
   @Column({ type: 'varchar', length: 16, nullable: true })
-  series!: string | null
+  series!: string | null;
 
   @Column({ type: 'varchar', length: 20, nullable: true })
-  isin!: string | null
+  isin!: string | null;
 
   @Column({ type: 'int', nullable: true })
-  lot_size!: number | null
+  lot_size!: number | null;
 
   @Column({ type: 'numeric', precision: 10, scale: 2, nullable: true })
-  face_value!: string | null
+  face_value!: string | null;
 
   @Column({ type: 'varchar', length: 16, default: 'active' })
-  status!: 'active' | 'inactive'
+  status!: 'active' | 'inactive';
 
   @Column({ type: 'timestamptz', nullable: true })
-  last_seen_at!: Date | null
+  last_seen_at!: Date | null;
 
   @Column({ type: 'jsonb', nullable: true })
-  metadata!: any | null
+  metadata!: any | null;
 
   @CreateDateColumn({ type: 'timestamptz' })
-  created_at!: Date
+  created_at!: Date;
 
   @UpdateDateColumn({ type: 'timestamptz' })
-  updated_at!: Date
-} 
+  updated_at!: Date;
+}

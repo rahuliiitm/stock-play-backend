@@ -1,31 +1,38 @@
-import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
-import { PortfolioV2 } from './PortfolioV2.entity'
+import {
+  Column,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { PortfolioV2 } from './PortfolioV2.entity';
 
 @Entity('holdings')
 @Index(['portfolioId', 'symbol'], { unique: true })
 export class Holding {
   @PrimaryGeneratedColumn('uuid')
-  id!: string
+  id!: string;
 
   @Column({ type: 'uuid' })
-  portfolioId!: string
+  portfolioId!: string;
 
   @Column({ type: 'varchar', length: 16 })
-  symbol!: string
+  symbol!: string;
 
   @Column({ type: 'varchar', length: 8, default: 'NSE' })
-  exchange!: 'NSE' | 'BSE'
+  exchange!: 'NSE' | 'BSE';
 
   @Column({ type: 'numeric', precision: 18, scale: 4 })
-  quantity!: string
+  quantity!: string;
 
   @Column({ type: 'decimal', precision: 18, scale: 2 })
-  avg_cost!: number
+  avg_cost!: number;
 
   @Column({ type: 'decimal', precision: 18, scale: 2, default: 0 })
-  current_value!: number
+  current_value!: number;
 
   @ManyToOne(() => PortfolioV2, (p) => p.holdings)
   @JoinColumn({ name: 'portfolioId' })
-  portfolio!: PortfolioV2
+  portfolio!: PortfolioV2;
 }

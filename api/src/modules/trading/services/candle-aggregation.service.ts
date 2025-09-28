@@ -8,7 +8,7 @@ import {
   getCandleEntity,
   CandleEntity,
   Candle1m,
-  Candle15m
+  Candle15m,
 } from '../schemas/candle.schema';
 import { LiveCandleData } from './live-data-feed.service';
 
@@ -36,7 +36,10 @@ export class CandleAggregationService {
   /**
    * Process live candle data and aggregate it across all configured timeframes
    */
-  async processLiveCandle(liveData: LiveCandleData, timeframes: TimeframeType[]): Promise<void> {
+  async processLiveCandle(
+    liveData: LiveCandleData,
+    timeframes: TimeframeType[],
+  ): Promise<void> {
     const redis = getRedis();
     if (!redis) {
       this.logger.warn('Redis not available for candle aggregation');
@@ -53,7 +56,10 @@ export class CandleAggregationService {
       try {
         await this.aggregateTimeframe(liveData, timeframe);
       } catch (error) {
-        this.logger.error(`Failed to aggregate ${timeframe} for ${liveData.symbol}:`, error);
+        this.logger.error(
+          `Failed to aggregate ${timeframe} for ${liveData.symbol}:`,
+          error,
+        );
       }
     }
   }
@@ -73,13 +79,18 @@ export class CandleAggregationService {
     });
 
     await this.candle1mRepository.save(candle1m);
-    this.logger.debug(`Saved 1m candle for ${liveData.symbol} at ${new Date(liveData.timestamp).toISOString()}`);
+    this.logger.debug(
+      `Saved 1m candle for ${liveData.symbol} at ${new Date(liveData.timestamp).toISOString()}`,
+    );
   }
 
   /**
    * Aggregate data for a specific timeframe
    */
-  private async aggregateTimeframe(liveData: LiveCandleData, timeframe: TimeframeType): Promise<void> {
+  private async aggregateTimeframe(
+    liveData: LiveCandleData,
+    timeframe: TimeframeType,
+  ): Promise<void> {
     const redis = getRedis();
     if (!redis) return;
 
@@ -91,7 +102,8 @@ export class CandleAggregationService {
     const timeframeMs = this.getTimeframeDuration(timeframe);
 
     // Round timestamp to timeframe boundary
-    const timeframeStart = Math.floor(liveData.timestamp / timeframeMs) * timeframeMs;
+    const timeframeStart =
+      Math.floor(liveData.timestamp / timeframeMs) * timeframeMs;
 
     // Get existing aggregation data
     const existingData = await redis.get(aggregationKey);
@@ -137,9 +149,15 @@ export class CandleAggregationService {
     }
 
     // Save updated aggregation back to Redis
-    await redis.setex(aggregationKey, timeframeMs / 1000 * 2, JSON.stringify(aggregatedCandle));
+    await redis.setex(
+      aggregationKey,
+      (timeframeMs / 1000) * 2,
+      JSON.stringify(aggregatedCandle),
+    );
 
-    this.logger.debug(`Updated ${timeframe} aggregation for ${symbol}: ${aggregatedCandle.count} candles`);
+    this.logger.debug(
+      `Updated ${timeframe} aggregation for ${symbol}: ${aggregatedCandle.count} candles`,
+    );
   }
 
   /**
@@ -148,7 +166,7 @@ export class CandleAggregationService {
   private async saveAggregatedCandle(
     aggregatedCandle: AggregatedCandle,
     symbol: string,
-    timeframe: TimeframeType
+    timeframe: TimeframeType,
   ): Promise<void> {
     const EntityClass = getCandleEntity(timeframe);
     const repository = this.getRepositoryForEntity(EntityClass);
@@ -164,7 +182,9 @@ export class CandleAggregationService {
     });
 
     await repository.save(candle);
-    this.logger.debug(`Saved ${timeframe} candle for ${symbol} at ${new Date(aggregatedCandle.startTime).toISOString()}`);
+    this.logger.debug(
+      `Saved ${timeframe} candle for ${symbol} at ${new Date(aggregatedCandle.startTime).toISOString()}`,
+    );
   }
 
   /**
@@ -186,7 +206,9 @@ export class CandleAggregationService {
   /**
    * Get repository for a specific entity
    */
-  private getRepositoryForEntity(EntityClass: new () => CandleEntity): Repository<CandleEntity> {
+  private getRepositoryForEntity(
+    EntityClass: new () => CandleEntity,
+  ): Repository<CandleEntity> {
     // This is a simplified approach - in a real implementation,
     // you'd inject all repositories or use a more sophisticated approach
     const entityName = EntityClass.name;
@@ -203,11 +225,16 @@ export class CandleAggregationService {
   /**
    * Get aggregated candle data from Redis (for debugging/testing)
    */
-  async getAggregatedCandle(symbol: string, timeframe: TimeframeType): Promise<AggregatedCandle | null> {
+  async getAggregatedCandle(
+    symbol: string,
+    timeframe: TimeframeType,
+  ): Promise<AggregatedCandle | null> {
     const redis = getRedis();
     if (!redis) return null;
 
-    const data = await redis.get(REDIS_KEYS.CANDLE_AGGREGATION(symbol, timeframe));
+    const data = await redis.get(
+      REDIS_KEYS.CANDLE_AGGREGATION(symbol, timeframe),
+    );
     return data ? JSON.parse(data) : null;
   }
 
@@ -231,7 +258,11 @@ export class CandleAggregationService {
           const aggregatedCandle: AggregatedCandle = JSON.parse(data);
           const [, , symbol, timeframe] = key.split(':');
 
-          await this.saveAggregatedCandle(aggregatedCandle, symbol, timeframe as TimeframeType);
+          await this.saveAggregatedCandle(
+            aggregatedCandle,
+            symbol,
+            timeframe as TimeframeType,
+          );
           flushed++;
         }
       } catch (error) {
@@ -245,7 +276,9 @@ export class CandleAggregationService {
   /**
    * Clean up old aggregation data (useful for maintenance)
    */
-  async cleanupOldAggregations(olderThanMs: number = 24 * 60 * 60 * 1000): Promise<void> {
+  async cleanupOldAggregations(
+    olderThanMs: number = 24 * 60 * 60 * 1000,
+  ): Promise<void> {
     const redis = getRedis();
     if (!redis) return;
 
@@ -264,7 +297,10 @@ export class CandleAggregationService {
           }
         }
       } catch (error) {
-        this.logger.error(`Failed to check aggregation for cleanup: ${key}`, error);
+        this.logger.error(
+          `Failed to check aggregation for cleanup: ${key}`,
+          error,
+        );
       }
     }
 

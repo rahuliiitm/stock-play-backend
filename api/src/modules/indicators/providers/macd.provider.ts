@@ -1,27 +1,35 @@
-import { IndicatorProvider, IndicatorResult, TechnicalIndicatorInput } from '../indicator-provider.interface'
-import { Candle } from '../../../lib/market-data-sdk/models'
-import { MACD } from 'technicalindicators'
+import {
+  IndicatorProvider,
+  IndicatorResult,
+  TechnicalIndicatorInput,
+} from '../indicator-provider.interface';
+import { Candle } from '../../../lib/market-data-sdk/models';
+import { MACD } from 'technicalindicators';
 
 export class MacdProvider implements IndicatorProvider {
-  name = 'MACD'
-  description = 'Moving Average Convergence Divergence - Trend-following momentum indicator'
-  requiredParameters = ['fastPeriod', 'slowPeriod']
-  optionalParameters = ['signalPeriod']
-  minDataPoints = 26
+  name = 'MACD';
+  description =
+    'Moving Average Convergence Divergence - Trend-following momentum indicator';
+  requiredParameters = ['fastPeriod', 'slowPeriod'];
+  optionalParameters = ['signalPeriod'];
+  minDataPoints = 26;
 
-  calculate(candles: Candle[], parameters: Record<string, any>): IndicatorResult | null {
+  calculate(
+    candles: Candle[],
+    parameters: Record<string, any>,
+  ): IndicatorResult | null {
     if (candles.length < this.minDataPoints) {
-      return null
+      return null;
     }
 
-    const fastPeriod = parameters.fastPeriod || 12
-    const slowPeriod = parameters.slowPeriod || 26
-    const signalPeriod = parameters.signalPeriod || 9
+    const fastPeriod = parameters.fastPeriod || 12;
+    const slowPeriod = parameters.slowPeriod || 26;
+    const signalPeriod = parameters.signalPeriod || 9;
 
     // Convert candles to technical indicators input format
     const input: TechnicalIndicatorInput = {
-      close: candles.map(c => c.close)
-    }
+      close: candles.map((c) => c.close),
+    };
 
     try {
       const macdValues = MACD.calculate({
@@ -30,19 +38,19 @@ export class MacdProvider implements IndicatorProvider {
         slowPeriod,
         signalPeriod,
         SimpleMAOscillator: false,
-        SimpleMASignal: false
-      })
+        SimpleMASignal: false,
+      });
 
       if (macdValues.length === 0) {
-        return null
+        return null;
       }
 
-      const latestMacd = macdValues[macdValues.length - 1]
-      const timestamp = candles[candles.length - 1].time
+      const latestMacd = macdValues[macdValues.length - 1];
+      const timestamp = candles[candles.length - 1].time;
 
       // Ensure MACD and signal values exist
       if (latestMacd.MACD === undefined || latestMacd.signal === undefined) {
-        return null
+        return null;
       }
 
       return {
@@ -56,13 +64,13 @@ export class MacdProvider implements IndicatorProvider {
           histogram: latestMacd.histogram,
           isBullish: latestMacd.MACD > latestMacd.signal,
           isBearish: latestMacd.MACD < latestMacd.signal,
-          allValues: macdValues
+          allValues: macdValues,
         },
-        timestamp: new Date(timestamp)
-      }
+        timestamp: new Date(timestamp),
+      };
     } catch (error) {
-      console.error('MACD calculation error:', error)
-      return null
+      console.error('MACD calculation error:', error);
+      return null;
     }
   }
 }

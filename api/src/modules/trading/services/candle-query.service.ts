@@ -1,6 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common'
-import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
+import { Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import {
   Candle1m,
   Candle5m,
@@ -10,24 +10,24 @@ import {
   Candle4h,
   Candle1d,
   BaseCandle,
-  TimeframeType
-} from '../schemas/candle.schema'
+  TimeframeType,
+} from '../schemas/candle.schema';
 
 export interface CandleQueryResult {
-  timestamp: number
-  open: number
-  high: number
-  low: number
-  close: number
-  volume: number
+  timestamp: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
 }
 
-type CandleRepositoryMap = Record<TimeframeType, Repository<BaseCandle>>
+type CandleRepositoryMap = Record<TimeframeType, Repository<BaseCandle>>;
 
 @Injectable()
 export class CandleQueryService {
-  private readonly logger = new Logger(CandleQueryService.name)
-  private repositoryMap: CandleRepositoryMap
+  private readonly logger = new Logger(CandleQueryService.name);
+  private repositoryMap: CandleRepositoryMap;
 
   constructor(
     @InjectRepository(Candle1m) private candle1mRepo: Repository<Candle1m>,
@@ -46,26 +46,26 @@ export class CandleQueryService {
       '1h': this.candle1hRepo,
       '4h': this.candle4hRepo,
       '1d': this.candle1dRepo,
-    } as CandleRepositoryMap
+    } as CandleRepositoryMap;
   }
 
   async getRecentCandles(
     symbol: string,
     timeframe: TimeframeType,
-    limit: number = 200
+    limit: number = 200,
   ): Promise<CandleQueryResult[]> {
-    const repository = this.repositoryMap[timeframe]
+    const repository = this.repositoryMap[timeframe];
 
     if (!repository) {
-      this.logger.warn(`No repository configured for timeframe ${timeframe}`)
-      return []
+      this.logger.warn(`No repository configured for timeframe ${timeframe}`);
+      return [];
     }
 
     const results = await repository.find({
       where: { symbol },
       order: { timestamp: 'DESC' },
-      take: limit
-    })
+      take: limit,
+    });
 
     return results
       .sort((a, b) => Number(a.timestamp) - Number(b.timestamp))
@@ -75,9 +75,7 @@ export class CandleQueryService {
         high: Number(candle.high),
         low: Number(candle.low),
         close: Number(candle.close),
-        volume: Number(candle.volume)
-      }))
+        volume: Number(candle.volume),
+      }));
   }
 }
-
-

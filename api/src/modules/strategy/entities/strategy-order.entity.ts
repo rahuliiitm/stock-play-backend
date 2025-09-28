@@ -1,236 +1,270 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm'
-import { Strategy } from './strategy.entity'
-import { StrategyPosition } from './strategy-position.entity'
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
+import { Strategy } from './strategy.entity';
+import { StrategyPosition } from './strategy-position.entity';
 
-export type OrderType = 'MARKET' | 'LIMIT' | 'SL' | 'SL-M' | 'BO' | 'CO' | 'ICEBERG' | 'OCO'
-export type OrderSide = 'BUY' | 'SELL'
-export type OrderStatus = 'PENDING' | 'EXECUTED' | 'CANCELLED' | 'REJECTED' | 'PARTIAL_FILL'
-export type ProductType = 'CNC' | 'MIS' | 'NRML'
-export type OrderValidity = 'DAY' | 'IOC' | 'GTD'
+export type OrderType =
+  | 'MARKET'
+  | 'LIMIT'
+  | 'SL'
+  | 'SL-M'
+  | 'BO'
+  | 'CO'
+  | 'ICEBERG'
+  | 'OCO';
+export type OrderSide = 'BUY' | 'SELL';
+export type OrderStatus =
+  | 'PENDING'
+  | 'EXECUTED'
+  | 'CANCELLED'
+  | 'REJECTED'
+  | 'PARTIAL_FILL';
+export type ProductType = 'CNC' | 'MIS' | 'NRML';
+export type OrderValidity = 'DAY' | 'IOC' | 'GTD';
 
 @Entity('strategy_orders')
 export class StrategyOrder {
   @PrimaryGeneratedColumn('uuid')
-  id: string
+  id: string;
 
   @Column({ type: 'uuid' })
-  strategyId: string
+  strategyId: string;
 
   @Column({ type: 'uuid', nullable: true })
-  positionId: string
+  positionId: string;
 
   @Column({ type: 'varchar', length: 20 })
-  orderType: OrderType
+  orderType: OrderType;
 
   @Column({ type: 'varchar', length: 4 })
-  side: OrderSide
+  side: OrderSide;
 
   @Column({ length: 50 })
-  symbol: string
+  symbol: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
-  quantity: number
+  quantity: number;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
-  price: number
+  price: number;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
-  triggerPrice: number
+  triggerPrice: number;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
-  disclosedQuantity: number
+  disclosedQuantity: number;
 
   @Column({ type: 'varchar', length: 10, default: 'MIS' })
-  productType: ProductType
+  productType: ProductType;
 
   @Column({ type: 'varchar', length: 10, default: 'DAY' })
-  orderValidity: OrderValidity
+  orderValidity: OrderValidity;
 
   @Column({ type: 'varchar', length: 20, default: 'PENDING' })
-  status: OrderStatus
+  status: OrderStatus;
 
   @Column({ type: 'varchar', length: 100, nullable: true, unique: true })
-  brokerOrderId: string
+  brokerOrderId: string;
 
   @Column({ type: 'varchar', length: 50, nullable: true })
-  brokerOrderStatus: string
+  brokerOrderStatus: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
-  executionPrice: number
+  executionPrice: number;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
-  executedQuantity: number
+  executedQuantity: number;
 
   @Column({ type: 'jsonb', nullable: true })
-  orderParams: Record<string, any>
+  orderParams: Record<string, any>;
 
   @Column({ type: 'text', nullable: true })
-  errorMessage: string
+  errorMessage: string;
 
   @Column({ type: 'integer', default: 0 })
-  retryCount: number
+  retryCount: number;
 
   @Column({ type: 'jsonb', nullable: true })
-  metadata: Record<string, any>
+  metadata: Record<string, any>;
 
   // Relationships
-  @ManyToOne(() => Strategy, strategy => strategy.orders, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Strategy, (strategy) => strategy.orders, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'strategy_id' })
-  strategy: Strategy
+  strategy: Strategy;
 
-  @ManyToOne(() => StrategyPosition, position => position.orders, { onDelete: 'SET NULL' })
+  @ManyToOne(() => StrategyPosition, (position) => position.orders, {
+    onDelete: 'SET NULL',
+  })
   @JoinColumn({ name: 'position_id' })
-  position?: StrategyPosition
+  position?: StrategyPosition;
 
   @CreateDateColumn()
-  createdAt: Date
+  createdAt: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date
+  updatedAt: Date;
 
   // Helper methods
   isPending(): boolean {
-    return this.status === 'PENDING'
+    return this.status === 'PENDING';
   }
 
   isExecuted(): boolean {
-    return this.status === 'EXECUTED'
+    return this.status === 'EXECUTED';
   }
 
   isRejected(): boolean {
-    return this.status === 'REJECTED'
+    return this.status === 'REJECTED';
   }
 
   isCancelled(): boolean {
-    return this.status === 'CANCELLED'
+    return this.status === 'CANCELLED';
   }
 
   getRemainingQuantity(): number {
-    return this.quantity - this.executedQuantity
+    return this.quantity - this.executedQuantity;
   }
 
   isFullyExecuted(): boolean {
-    return this.executedQuantity >= this.quantity
+    return this.executedQuantity >= this.quantity;
   }
 
   isPartiallyExecuted(): boolean {
-    return this.executedQuantity > 0 && this.executedQuantity < this.quantity
+    return this.executedQuantity > 0 && this.executedQuantity < this.quantity;
   }
 
   getExecutionRate(): number {
-    return this.quantity > 0 ? (this.executedQuantity / this.quantity) * 100 : 0
+    return this.quantity > 0
+      ? (this.executedQuantity / this.quantity) * 100
+      : 0;
   }
 
   canRetry(): boolean {
-    return this.retryCount < 3 && !this.isExecuted()
+    return this.retryCount < 3 && !this.isExecuted();
   }
 
   markAsExecuted(executionPrice: number, executedQty: number): void {
-    this.executionPrice = executionPrice
-    this.executedQuantity = executedQty
-    this.status = this.isFullyExecuted() ? 'EXECUTED' : 'PARTIAL_FILL'
-    this.brokerOrderStatus = 'EXECUTED'
-    this.updatedAt = new Date()
+    this.executionPrice = executionPrice;
+    this.executedQuantity = executedQty;
+    this.status = this.isFullyExecuted() ? 'EXECUTED' : 'PARTIAL_FILL';
+    this.brokerOrderStatus = 'EXECUTED';
+    this.updatedAt = new Date();
   }
 
   markAsRejected(errorMessage: string): void {
-    this.status = 'REJECTED'
-    this.errorMessage = errorMessage
-    this.brokerOrderStatus = 'REJECTED'
-    this.updatedAt = new Date()
+    this.status = 'REJECTED';
+    this.errorMessage = errorMessage;
+    this.brokerOrderStatus = 'REJECTED';
+    this.updatedAt = new Date();
   }
 
   markAsCancelled(reason?: string): void {
-    this.status = 'CANCELLED'
+    this.status = 'CANCELLED';
     if (reason) {
-      this.errorMessage = reason
+      this.errorMessage = reason;
     }
-    this.updatedAt = new Date()
+    this.updatedAt = new Date();
   }
 
   incrementRetry(errorMessage?: string): boolean {
     if (!this.canRetry()) {
-      return false
+      return false;
     }
 
-    this.retryCount++
+    this.retryCount++;
     if (errorMessage) {
-      this.errorMessage = errorMessage
+      this.errorMessage = errorMessage;
     }
-    this.updatedAt = new Date()
-    return true
+    this.updatedAt = new Date();
+    return true;
   }
 
   // Get order value
   getOrderValue(): number {
-    const price = this.executionPrice || this.price || 0
-    return price * this.quantity
+    const price = this.executionPrice || this.price || 0;
+    return price * this.quantity;
   }
 
   // Get executed value
   getExecutedValue(): number {
-    if (!this.executionPrice) return 0
-    return this.executionPrice * this.executedQuantity
+    if (!this.executionPrice) return 0;
+    return this.executionPrice * this.executedQuantity;
   }
 
   // Calculate slippage (difference between expected and actual execution price)
   getSlippage(): number {
-    if (!this.executionPrice || !this.price) return 0
-    return ((this.executionPrice - this.price) / this.price) * 100
+    if (!this.executionPrice || !this.price) return 0;
+    return ((this.executionPrice - this.price) / this.price) * 100;
   }
 
   // Get order duration in milliseconds
   getDuration(): number {
-    return Date.now() - this.createdAt.getTime()
+    return Date.now() - this.createdAt.getTime();
   }
 
   // Get order duration in minutes
   getDurationMinutes(): number {
-    return Math.floor(this.getDuration() / (1000 * 60))
+    return Math.floor(this.getDuration() / (1000 * 60));
   }
 
   // Check if order is expired based on validity
   isExpired(): boolean {
     if (this.orderValidity === 'DAY') {
-      const orderDate = this.createdAt.toDateString()
-      const today = new Date().toDateString()
-      return orderDate !== today
+      const orderDate = this.createdAt.toDateString();
+      const today = new Date().toDateString();
+      return orderDate !== today;
     }
 
     // For GTD orders, check expiry date
     if (this.orderValidity === 'GTD' && this.metadata?.expiryDate) {
-      return new Date() > new Date(this.metadata.expiryDate)
+      return new Date() > new Date(this.metadata.expiryDate);
     }
 
-    return false
+    return false;
   }
 
   // Validate order parameters
-  validate(): { isValid: boolean, errors: string[] } {
-    const errors: string[] = []
+  validate(): { isValid: boolean; errors: string[] } {
+    const errors: string[] = [];
 
     // Basic validations
-    if (!this.symbol) errors.push('Symbol is required')
-    if (!this.quantity || this.quantity <= 0) errors.push('Valid quantity is required')
-    if (!this.side) errors.push('Order side is required')
+    if (!this.symbol) errors.push('Symbol is required');
+    if (!this.quantity || this.quantity <= 0)
+      errors.push('Valid quantity is required');
+    if (!this.side) errors.push('Order side is required');
 
     // Order type specific validations
     if (this.orderType === 'LIMIT' && !this.price) {
-      errors.push('Limit price is required for LIMIT orders')
+      errors.push('Limit price is required for LIMIT orders');
     }
 
-    if ((this.orderType === 'SL' || this.orderType === 'SL-M') && !this.triggerPrice) {
-      errors.push('Trigger price is required for SL orders')
+    if (
+      (this.orderType === 'SL' || this.orderType === 'SL-M') &&
+      !this.triggerPrice
+    ) {
+      errors.push('Trigger price is required for SL orders');
     }
 
-    if (this.orderType === 'ICEBERG' && (!this.disclosedQuantity || this.disclosedQuantity >= this.quantity)) {
-      errors.push('Valid disclosed quantity is required for ICEBERG orders')
+    if (
+      this.orderType === 'ICEBERG' &&
+      (!this.disclosedQuantity || this.disclosedQuantity >= this.quantity)
+    ) {
+      errors.push('Valid disclosed quantity is required for ICEBERG orders');
     }
 
     return {
       isValid: errors.length === 0,
-      errors
-    }
+      errors,
+    };
   }
 
   // Convert to broker API format
@@ -241,18 +275,21 @@ export class StrategyOrder {
       quantity: this.quantity,
       orderType: this.orderType,
       productType: this.productType,
-      orderValidity: this.orderValidity
-    }
+      orderValidity: this.orderValidity,
+    };
 
-    if (this.price !== undefined && this.price !== null) brokerOrder.price = this.price
-    if (this.triggerPrice !== undefined && this.triggerPrice !== null) brokerOrder.triggerPrice = this.triggerPrice
-    if (this.disclosedQuantity !== undefined && this.disclosedQuantity !== null) brokerOrder.disclosedQuantity = this.disclosedQuantity
+    if (this.price !== undefined && this.price !== null)
+      brokerOrder.price = this.price;
+    if (this.triggerPrice !== undefined && this.triggerPrice !== null)
+      brokerOrder.triggerPrice = this.triggerPrice;
+    if (this.disclosedQuantity !== undefined && this.disclosedQuantity !== null)
+      brokerOrder.disclosedQuantity = this.disclosedQuantity;
 
     // Add any additional broker-specific parameters
     if (this.orderParams) {
-      Object.assign(brokerOrder, this.orderParams)
+      Object.assign(brokerOrder, this.orderParams);
     }
 
-    return brokerOrder
+    return brokerOrder;
   }
 }

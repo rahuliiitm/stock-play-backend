@@ -22,7 +22,7 @@ describe('Portfolio Management (e2e)', () => {
       .send({
         email: 'test@example.com',
         password: 'testpassword123',
-        displayName: 'Test User'
+        displayName: 'Test User',
       });
 
     if (registerResponse.status === 201) {
@@ -33,7 +33,7 @@ describe('Portfolio Management (e2e)', () => {
         .post('/users/login')
         .send({
           email: 'test@example.com',
-          password: 'testpassword123'
+          password: 'testpassword123',
         });
       authToken = loginResponse.body.accessToken;
     }
@@ -51,14 +51,14 @@ describe('Portfolio Management (e2e)', () => {
         .send({
           name: 'Test Portfolio',
           visibility: 'private',
-          initialValueCents: 1000000
+          initialValueCents: 1000000,
         });
 
       expect(response.status).toBe(201);
       expect(response.body).toHaveProperty('id');
       expect(response.body.name).toBe('Test Portfolio');
       expect(response.body.visibility).toBe('private');
-      
+
       portfolioId = response.body.id;
     });
 
@@ -91,7 +91,7 @@ describe('Portfolio Management (e2e)', () => {
         .send({
           symbol: 'RELIANCE',
           quantity: 10,
-          exchange: 'NSE'
+          exchange: 'NSE',
         });
 
       expect(response.status).toBe(201);
@@ -104,7 +104,7 @@ describe('Portfolio Management (e2e)', () => {
         .delete(`/v2/portfolios/${portfolioId}/stocks/RELIANCE`)
         .set('Authorization', `Bearer ${authToken}`)
         .send({
-          quantity: 5
+          quantity: 5,
         });
 
       expect(response.status).toBe(200);
@@ -113,8 +113,9 @@ describe('Portfolio Management (e2e)', () => {
 
   describe('Stock Data', () => {
     it('should get stock quote', async () => {
-      const response = await request(app.getHttpServer())
-        .get('/stocks/RELIANCE/quote');
+      const response = await request(app.getHttpServer()).get(
+        '/stocks/RELIANCE/quote',
+      );
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('symbol', 'RELIANCE');
@@ -123,8 +124,9 @@ describe('Portfolio Management (e2e)', () => {
     });
 
     it('should get stock historical data', async () => {
-      const response = await request(app.getHttpServer())
-        .get('/stocks/RELIANCE/history?intervalMinutes=1440');
+      const response = await request(app.getHttpServer()).get(
+        '/stocks/RELIANCE/history?intervalMinutes=1440',
+      );
 
       expect(response.status).toBe(200);
       expect(Array.isArray(response.body)).toBe(true);
@@ -141,16 +143,18 @@ describe('Portfolio Management (e2e)', () => {
 
   describe('Leaderboard', () => {
     it('should get global leaderboard', async () => {
-      const response = await request(app.getHttpServer())
-        .get('/leaderboard/global');
+      const response = await request(app.getHttpServer()).get(
+        '/leaderboard/global',
+      );
 
       expect(response.status).toBe(200);
       expect(Array.isArray(response.body)).toBe(true);
     });
 
     it('should get leaderboard by window', async () => {
-      const response = await request(app.getHttpServer())
-        .get('/leaderboard/ALL');
+      const response = await request(app.getHttpServer()).get(
+        '/leaderboard/ALL',
+      );
 
       expect(response.status).toBe(200);
       expect(Array.isArray(response.body)).toBe(true);

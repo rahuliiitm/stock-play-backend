@@ -1,78 +1,85 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm'
-import { BacktestResult } from './backtest-result.entity'
-import { BacktestTrade } from './backtest-trade.entity'
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToMany,
+} from 'typeorm';
+import { BacktestResult } from './backtest-result.entity';
+import { BacktestTrade } from './backtest-trade.entity';
 
 @Entity('backtest_runs')
 export class BacktestRun {
   @PrimaryGeneratedColumn('uuid')
-  id: string
+  id: string;
 
   @Column()
-  name: string
+  name: string;
 
   @Column()
-  description: string
+  description: string;
 
   @Column()
-  symbol: string
+  symbol: string;
 
   @Column()
-  timeframe: string
+  timeframe: string;
 
   @Column('timestamp')
-  startDate: Date
+  startDate: Date;
 
   @Column('timestamp')
-  endDate: Date
+  endDate: Date;
 
   @Column('decimal', { precision: 15, scale: 2 })
-  initialBalance: number
+  initialBalance: number;
 
   @Column('json')
-  strategyConfig: any
+  strategyConfig: any;
 
   @Column('json')
-  backtestConfig: any
+  backtestConfig: any;
 
   @Column({ default: 'PENDING' })
-  status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED'
+  status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
 
   @Column({ nullable: true })
-  errorMessage: string
+  errorMessage: string;
 
   @Column('timestamp', { nullable: true })
-  startedAt: Date
+  startedAt: Date;
 
   @Column('timestamp', { nullable: true })
-  completedAt: Date
+  completedAt: Date;
 
   @Column('decimal', { precision: 15, scale: 2, nullable: true })
-  totalReturn: number
+  totalReturn: number;
 
   @Column('decimal', { precision: 10, scale: 4, nullable: true })
-  totalReturnPercentage: number
+  totalReturnPercentage: number;
 
   @Column('decimal', { precision: 10, scale: 4, nullable: true })
-  maxDrawdown: number
+  maxDrawdown: number;
 
   @Column('decimal', { precision: 10, scale: 4, nullable: true })
-  winRate: number
+  winRate: number;
 
   @Column({ nullable: true })
-  totalTrades: number
+  totalTrades: number;
 
   @Column('decimal', { precision: 10, scale: 4, nullable: true })
-  sharpeRatio: number
+  sharpeRatio: number;
 
   @CreateDateColumn()
-  createdAt: Date
+  createdAt: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date
+  updatedAt: Date;
 
-  @OneToMany(() => BacktestResult, result => result.backtestRun)
-  results: BacktestResult[]
+  @OneToMany(() => BacktestResult, (result) => result.backtestRun)
+  results: BacktestResult[];
 
-  @OneToMany(() => BacktestTrade, trade => trade.backtestRun)
-  trades: BacktestTrade[]
+  @OneToMany(() => BacktestTrade, (trade) => trade.backtestRun)
+  trades: BacktestTrade[];
 }

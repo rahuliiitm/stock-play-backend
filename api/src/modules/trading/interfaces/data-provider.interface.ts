@@ -6,7 +6,7 @@ export interface MarketDataProvider {
   /**
    * Get live quote for a symbol
    */
-  getQuote(symbol: string): Promise<QuoteData | null>
+  getQuote(symbol: string): Promise<QuoteData | null>;
 
   /**
    * Get historical candles for a symbol
@@ -15,56 +15,59 @@ export interface MarketDataProvider {
     symbol: string,
     timeframe: string,
     startDate: Date,
-    endDate: Date
-  ): Promise<CandleData[]>
+    endDate: Date,
+  ): Promise<CandleData[]>;
 
   /**
    * Get option chain data for a symbol
    */
-  getOptionChain(symbol: string, expiry?: string): Promise<OptionChainData | null>
+  getOptionChain(
+    symbol: string,
+    expiry?: string,
+  ): Promise<OptionChainData | null>;
 
   /**
    * Check if provider is available
    */
-  isAvailable(): Promise<boolean>
+  isAvailable(): Promise<boolean>;
 }
 
 export interface QuoteData {
-  symbol: string
-  ltp: number
-  price: number
-  volume: number
-  timestamp: number
-  exchange?: string
-  segment?: string
+  symbol: string;
+  ltp: number;
+  price: number;
+  volume: number;
+  timestamp: number;
+  exchange?: string;
+  segment?: string;
 }
 
 export interface CandleData {
-  symbol: string
-  timestamp: number
-  open: number
-  high: number
-  low: number
-  close: number
-  volume: number
-  timeframe: string
+  symbol: string;
+  timestamp: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  timeframe: string;
 }
 
 export interface OptionChainData {
-  underlying: string
-  expiry: string
-  strikes: OptionStrikeData[]
-  calls: OptionStrikeData[]
-  puts: OptionStrikeData[]
+  underlying: string;
+  expiry: string;
+  strikes: OptionStrikeData[];
+  calls: OptionStrikeData[];
+  puts: OptionStrikeData[];
 }
 
 export interface OptionStrikeData {
-  strike: number
-  type: 'CE' | 'PE'
-  symbol: string
-  ltp: number
-  volume: number
-  oi: number
-  bid: number
-  ask: number
+  strike: number;
+  type: 'CE' | 'PE';
+  symbol: string;
+  ltp: number;
+  volume: number;
+  oi: number;
+  bid: number;
+  ask: number;
 }

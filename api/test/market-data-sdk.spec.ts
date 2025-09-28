@@ -61,7 +61,9 @@ describe('Market Data SDK', () => {
   });
 
   describe('Technical Indicators', () => {
-    const testPrices = [10, 12, 11, 13, 14, 12, 15, 16, 14, 17, 18, 16, 19, 20, 18];
+    const testPrices = [
+      10, 12, 11, 13, 14, 12, 15, 16, 14, 17, 18, 16, 19, 20, 18,
+    ];
 
     describe('RSI', () => {
       it('should calculate RSI correctly', () => {
@@ -108,8 +110,11 @@ describe('Market Data SDK', () => {
   describe('Data Models', () => {
     it('should have correct data structures', () => {
       // Test that the SDK exports are available
-      const { Exchange, Interval } = require('../src/lib/market-data-sdk/models');
-      
+      const {
+        Exchange,
+        Interval,
+      } = require('../src/lib/market-data-sdk/models');
+
       expect(Exchange).toBeDefined();
       expect(Interval).toBeDefined();
       expect(Exchange.NSE).toBe('NSE');

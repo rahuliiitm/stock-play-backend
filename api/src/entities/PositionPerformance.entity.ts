@@ -1,5 +1,13 @@
-import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
-import { Position } from './Position.entity'
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { Position } from './Position.entity';
 
 @Entity('position_performance')
 @Index(['position_id', 'date'], { unique: true })
@@ -7,63 +15,63 @@ import { Position } from './Position.entity'
 @Index(['portfolio_id', 'date'])
 export class PositionPerformance {
   @PrimaryGeneratedColumn('uuid')
-  id!: string
+  id!: string;
 
   @Column({ type: 'uuid' })
-  position_id!: string
+  position_id!: string;
 
   @Column({ type: 'uuid' })
-  portfolio_id!: string
+  portfolio_id!: string;
 
   @Column({ type: 'varchar', length: 16 })
-  symbol!: string
+  symbol!: string;
 
   @Column({ type: 'date' })
-  date!: Date
+  date!: Date;
 
   @Column({ type: 'varchar', length: 10 })
-  period_type!: 'daily' | 'weekly' | 'monthly'
+  period_type!: 'daily' | 'weekly' | 'monthly';
 
   // Position Details
   @Column({ type: 'numeric', precision: 18, scale: 4 })
-  quantity!: string
+  quantity!: string;
 
   @Column({ type: 'decimal', precision: 18, scale: 2 })
-  avg_cost_amount!: number
+  avg_cost_amount!: number;
 
   @Column({ type: 'decimal', precision: 18, scale: 2 })
-  market_price_amount!: number
+  market_price_amount!: number;
 
   @Column({ type: 'decimal', precision: 18, scale: 2 })
-  market_value_amount!: number
+  market_value_amount!: number;
 
   // Performance Metrics
   @Column({ type: 'decimal', precision: 8, scale: 4 })
-  daily_return_percent!: number
+  daily_return_percent!: number;
 
   @Column({ type: 'decimal', precision: 8, scale: 4 })
-  total_return_percent!: number
+  total_return_percent!: number;
 
   @Column({ type: 'decimal', precision: 18, scale: 2 })
-  daily_pnl_amount!: number
+  daily_pnl_amount!: number;
 
   @Column({ type: 'decimal', precision: 18, scale: 2 })
-  unrealized_pnl_amount!: number
+  unrealized_pnl_amount!: number;
 
   @Column({ type: 'decimal', precision: 18, scale: 2 })
-  realized_pnl_amount!: number
+  realized_pnl_amount!: number;
 
   // Additional Metrics
   @Column({ type: 'decimal', precision: 8, scale: 4, nullable: true })
-  weight_percent!: number | null // Position weight in portfolio
+  weight_percent!: number | null; // Position weight in portfolio
 
   @Column({ type: 'decimal', precision: 8, scale: 4, nullable: true })
-  contribution_to_return!: number | null // Contribution to portfolio return
+  contribution_to_return!: number | null; // Contribution to portfolio return
 
   @CreateDateColumn({ type: 'timestamptz' })
-  created_at!: Date
+  created_at!: Date;
 
   @ManyToOne(() => Position)
   @JoinColumn({ name: 'position_id' })
-  position!: Position
-} 
+  position!: Position;
+}

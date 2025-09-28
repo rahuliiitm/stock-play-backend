@@ -1,10 +1,10 @@
-import { MigrationInterface, QueryRunner } from "typeorm"
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class Init1710000000000 implements MigrationInterface {
-  name = 'Init1710000000000'
+  name = 'Init1710000000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS citext`)
+    await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS citext`);
     await queryRunner.query(`
       CREATE TABLE IF NOT EXISTS users (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -17,10 +17,10 @@ export class Init1710000000000 implements MigrationInterface {
         created_at timestamptz NOT NULL DEFAULT now(),
         updated_at timestamptz NOT NULL DEFAULT now()
       )
-    `)
+    `);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DROP TABLE IF EXISTS users`)
+    await queryRunner.query(`DROP TABLE IF EXISTS users`);
   }
-} 
+}

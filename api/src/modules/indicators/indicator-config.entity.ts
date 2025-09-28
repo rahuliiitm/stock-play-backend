@@ -1,39 +1,46 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm'
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+} from 'typeorm';
 
 export interface IndicatorParams {
-  [key: string]: number | string
+  [key: string]: number | string;
 }
 
 @Entity('indicator_configs')
 @Index(['symbol', 'indicator_name'], { unique: true })
 export class IndicatorConfig {
   @PrimaryGeneratedColumn('uuid')
-  id: string
+  id: string;
 
   @Column({ type: 'varchar', length: 20 })
-  symbol: string
+  symbol: string;
 
   @Column({ type: 'varchar', length: 50 })
-  indicator_name: string
+  indicator_name: string;
 
   @Column({ type: 'jsonb' })
-  parameters: IndicatorParams
+  parameters: IndicatorParams;
 
   @Column({ type: 'boolean', default: true })
-  is_active: boolean
+  is_active: boolean;
 
   @Column({ type: 'int', default: 14 })
-  lookback_period: number
+  lookback_period: number;
 
   @Column({ type: 'varchar', length: 20, default: '1d' })
-  interval: string
+  interval: string;
 
   @Column({ type: 'text', nullable: true })
-  description: string
+  description: string;
 
   @CreateDateColumn()
-  created_at: Date
+  created_at: Date;
 
   @UpdateDateColumn()
-  updated_at: Date
+  updated_at: Date;
 }

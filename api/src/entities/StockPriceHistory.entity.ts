@@ -1,20 +1,20 @@
-import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm'
+import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity({ name: 'stock_price_history' })
 @Index(['symbol', 'as_of'], { unique: true })
 export class StockPriceHistory {
   @PrimaryGeneratedColumn('uuid')
-  id!: string
+  id!: string;
 
   @Column('text')
-  symbol!: string
+  symbol!: string;
 
   @Column('timestamptz')
-  as_of!: Date
+  as_of!: Date;
 
   @Column('double precision')
-  ltp!: number
+  ltp!: number;
 
   @Column('bigint', { nullable: true })
-  volume!: string | null
-} 
+  volume!: string | null;
+}

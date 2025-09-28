@@ -1,56 +1,56 @@
-import { Injectable, Logger } from '@nestjs/common'
-import { InjectRepository } from '@nestjs/typeorm'
-import { Repository, Like, MoreThan } from 'typeorm'
-import { PortfolioV2 } from '../../entities/PortfolioV2.entity'
-import { User } from '../../entities/User.entity'
-import { PortfolioServiceV2 } from './portfolio-v2.service'
+import { Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, Like, MoreThan } from 'typeorm';
+import { PortfolioV2 } from '../../entities/PortfolioV2.entity';
+import { User } from '../../entities/User.entity';
+import { PortfolioServiceV2 } from './portfolio-v2.service';
 
 export interface SearchFilters {
-  query?: string
-  visibility?: 'public' | 'unlisted' | 'private'
-  minReturnPercent?: number
-  maxReturnPercent?: number
-  sortBy?: 'name' | 'createdAt' | 'returnPercent' | 'marketValue'
-  sortOrder?: 'ASC' | 'DESC'
-  limit?: number
-  offset?: number
+  query?: string;
+  visibility?: 'public' | 'unlisted' | 'private';
+  minReturnPercent?: number;
+  maxReturnPercent?: number;
+  sortBy?: 'name' | 'createdAt' | 'returnPercent' | 'marketValue';
+  sortOrder?: 'ASC' | 'DESC';
+  limit?: number;
+  offset?: number;
 }
 
 export interface PortfolioSearchResult {
-  id: string
-  name: string
-  visibility: string
-  createdAt: Date
-  metrics: any
+  id: string;
+  name: string;
+  visibility: string;
+  createdAt: Date;
+  metrics: any;
   user: {
-    id: string
-    username?: string | null
-    displayName?: string | null
-  }
+    id: string;
+    username?: string | null;
+    displayName?: string | null;
+  };
   rank?: {
-    window: string
-    position: number
-    returnPercent: number
-  }
+    window: string;
+    position: number;
+    returnPercent: number;
+  };
 }
 
 export interface UserSearchResult {
-  id: string
-  username?: string | null
-  displayName?: string | null
-  email?: string | null
-  portfolioCount: number
+  id: string;
+  username?: string | null;
+  displayName?: string | null;
+  email?: string | null;
+  portfolioCount: number;
   topPortfolio?: {
-    id: string
-    name: string
-    returnPercent: number
-  }
-  createdAt: Date
+    id: string;
+    name: string;
+    returnPercent: number;
+  };
+  createdAt: Date;
 }
 
 @Injectable()
 export class SearchService {
-  private readonly logger = new Logger(SearchService.name)
+  private readonly logger = new Logger(SearchService.name);
 
   constructor(
     @InjectRepository(PortfolioV2)
@@ -61,9 +61,9 @@ export class SearchService {
   ) {}
 
   async searchPortfolios(filters: SearchFilters): Promise<{
-    results: PortfolioSearchResult[]
-    total: number
-    hasMore: boolean
+    results: PortfolioSearchResult[];
+    total: number;
+    hasMore: boolean;
   }> {
     const {
       query = '',
@@ -74,80 +74,84 @@ export class SearchService {
       sortOrder = 'DESC',
       limit = 20,
       offset = 0,
-    } = filters
+    } = filters;
 
     let queryBuilder = this.portfolios
       .createQueryBuilder('portfolio')
       .leftJoin('portfolio.user', 'user')
       .leftJoin(
-        subQuery => {
+        (subQuery) => {
           return subQuery
             .select('portfolio_id', 'portfolio_id')
             .addSelect('AVG(return_percent)', 'avgReturn')
             .from('portfolio_snapshots_v2', 'snapshot')
             .where('snapshot.date >= :startDate')
-            .groupBy('portfolio_id')
+            .groupBy('portfolio_id');
         },
         'metrics',
-        'portfolio.id = metrics.portfolio_id'
+        'portfolio.id = metrics.portfolio_id',
       )
-      .where('portfolio.visibility = :visibility', { visibility })
+      .where('portfolio.visibility = :visibility', { visibility });
 
     // Add search query if provided
     if (query && query.length > 1) {
       queryBuilder = queryBuilder.andWhere(
         '(portfolio.name ILIKE :query OR user.email ILIKE :query OR user.display_name ILIKE :query)',
-        { query: `%${query}%` }
-      )
+        { query: `%${query}%` },
+      );
     }
 
     // Add return percentage filters
     if (minReturnPercent !== undefined) {
-      queryBuilder = queryBuilder.andWhere('metrics.avgReturn >= :minReturnPercent', { minReturnPercent })
+      queryBuilder = queryBuilder.andWhere(
+        'metrics.avgReturn >= :minReturnPercent',
+        { minReturnPercent },
+      );
     }
 
     if (maxReturnPercent !== undefined) {
-      queryBuilder = queryBuilder.andWhere('metrics.avgReturn <= :maxReturnPercent', { maxReturnPercent })
+      queryBuilder = queryBuilder.andWhere(
+        'metrics.avgReturn <= :maxReturnPercent',
+        { maxReturnPercent },
+      );
     }
 
     // Add sorting
     switch (sortBy) {
       case 'name':
-        queryBuilder = queryBuilder.orderBy('portfolio.name', sortOrder)
-        break
+        queryBuilder = queryBuilder.orderBy('portfolio.name', sortOrder);
+        break;
       case 'createdAt':
-        queryBuilder = queryBuilder.orderBy('portfolio.created_at', sortOrder)
-        break
+        queryBuilder = queryBuilder.orderBy('portfolio.created_at', sortOrder);
+        break;
       case 'returnPercent':
-        queryBuilder = queryBuilder.orderBy('metrics.avgReturn', sortOrder)
-        break
+        queryBuilder = queryBuilder.orderBy('metrics.avgReturn', sortOrder);
+        break;
       case 'marketValue':
         // This would require joining with latest snapshot for market value
-        queryBuilder = queryBuilder.orderBy('portfolio.created_at', sortOrder)
-        break
+        queryBuilder = queryBuilder.orderBy('portfolio.created_at', sortOrder);
+        break;
       default:
-        queryBuilder = queryBuilder.orderBy('metrics.avgReturn', 'DESC')
+        queryBuilder = queryBuilder.orderBy('metrics.avgReturn', 'DESC');
     }
 
     // Add pagination
-    queryBuilder = queryBuilder.limit(limit + 1).offset(offset)
+    queryBuilder = queryBuilder.limit(limit + 1).offset(offset);
 
-    const portfolios = await queryBuilder.getMany()
-    const hasMore = portfolios.length > limit
+    const portfolios = await queryBuilder.getMany();
+    const hasMore = portfolios.length > limit;
 
     // Remove the extra item if we fetched more than limit
     if (hasMore) {
-      portfolios.pop()
+      portfolios.pop();
     }
 
-
-    const results: PortfolioSearchResult[] = portfolios.map(portfolio => {
+    const results: PortfolioSearchResult[] = portfolios.map((portfolio) => {
       const metrics = {
         returnPercent: 0,
         marketValueCents: 0,
         pnlCents: 0,
-      }
-
+      };
 
       return {
         id: portfolio.id,
@@ -160,43 +164,52 @@ export class SearchService {
           username: portfolio.user?.email,
           displayName: portfolio.user?.display_name,
         },
-      }
-    })
+      };
+    });
 
     // Get total count for pagination info
     const totalQuery = this.portfolios
       .createQueryBuilder('portfolio')
-      .where('portfolio.visibility = :visibility', { visibility })
+      .where('portfolio.visibility = :visibility', { visibility });
 
     if (query && query.length > 1) {
       totalQuery.andWhere(
         '(portfolio.name ILIKE :query OR portfolio.user_id IN (SELECT id FROM users WHERE username ILIKE :query OR display_name ILIKE :query))',
-        { query: `%${query}%` }
-      )
+        { query: `%${query}%` },
+      );
     }
 
-    const total = await totalQuery.getCount()
+    const total = await totalQuery.getCount();
 
     return {
       results,
       total,
       hasMore,
-    }
+    };
   }
 
-  async searchUsers(query: string, limit = 20, offset = 0): Promise<{
-    results: UserSearchResult[]
-    total: number
-    hasMore: boolean
+  async searchUsers(
+    query: string,
+    limit = 20,
+    offset = 0,
+  ): Promise<{
+    results: UserSearchResult[];
+    total: number;
+    hasMore: boolean;
   }> {
     if (!query || query.length < 2) {
-      return { results: [], total: 0, hasMore: false }
+      return { results: [], total: 0, hasMore: false };
     }
 
     // Search users by username, display name, or email
     const users = await this.users
       .createQueryBuilder('user')
-      .leftJoin('user.portfolios', 'portfolio', 'portfolio.visibility != :private', { private: 'private' })
+      .leftJoin(
+        'user.portfolios',
+        'portfolio',
+        'portfolio.visibility != :private',
+        { private: 'private' },
+      )
       .where('user.display_name ILIKE :query OR user.email ILIKE :query', {
         query: `%${query}%`,
       })
@@ -208,23 +221,25 @@ export class SearchService {
         'user.created_at',
         'COUNT(portfolio.id) as portfolioCount',
       ])
-      .groupBy('user.id, user.email, user.display_name, user.email, user.created_at')
+      .groupBy(
+        'user.id, user.email, user.display_name, user.email, user.created_at',
+      )
       .orderBy('user.created_at', 'DESC')
       .limit(limit + 1)
       .offset(offset)
-      .getRawMany()
+      .getRawMany();
 
-    const hasMore = users.length > limit
+    const hasMore = users.length > limit;
     if (hasMore) {
-      users.pop()
+      users.pop();
     }
 
     // Get top performing portfolio for each user
-    const userIds = users.map(u => u.user_id)
-    const topPortfolios = await this.getTopPortfoliosForUsers(userIds)
+    const userIds = users.map((u) => u.user_id);
+    const topPortfolios = await this.getTopPortfoliosForUsers(userIds);
 
-    const results: UserSearchResult[] = users.map(user => {
-      const topPortfolio = topPortfolios.get(user.user_id)
+    const results: UserSearchResult[] = users.map((user) => {
+      const topPortfolio = topPortfolios.get(user.user_id);
 
       return {
         id: user.user_id,
@@ -234,8 +249,8 @@ export class SearchService {
         portfolioCount: parseInt(user.portfolioCount || '0'),
         topPortfolio,
         createdAt: new Date(user.user_created_at),
-      }
-    })
+      };
+    });
 
     // Get total count
     const total = await this.users
@@ -243,13 +258,13 @@ export class SearchService {
       .where('user.display_name ILIKE :query OR user.email ILIKE :query', {
         query: `%${query}%`,
       })
-      .getCount()
+      .getCount();
 
     return {
       results,
       total,
       hasMore,
-    }
+    };
   }
 
   async getPopularPortfolios(limit = 10): Promise<PortfolioSearchResult[]> {
@@ -258,23 +273,23 @@ export class SearchService {
       .createQueryBuilder('portfolio')
       .leftJoin('portfolio.user', 'user')
       .leftJoin(
-        subQuery => {
+        (subQuery) => {
           return subQuery
             .select('portfolio_id', 'portfolio_id')
             .addSelect('AVG(return_percent)', 'avgReturn')
             .from('portfolio_snapshots_v2', 'snapshot')
             .where('snapshot.date >= :startDate')
-            .groupBy('portfolio_id')
+            .groupBy('portfolio_id');
         },
         'metrics',
-        'portfolio.id = metrics.portfolio_id'
+        'portfolio.id = metrics.portfolio_id',
       )
       .where('portfolio.visibility = :visibility', { visibility: 'public' })
       .orderBy('metrics.avgReturn', 'DESC')
       .limit(limit)
-      .getMany()
+      .getMany();
 
-    const results: PortfolioSearchResult[] = portfolios.map(portfolio => {
+    const results: PortfolioSearchResult[] = portfolios.map((portfolio) => {
       return {
         id: portfolio.id,
         name: portfolio.name,
@@ -290,60 +305,65 @@ export class SearchService {
           username: portfolio.user?.email,
           displayName: portfolio.user?.display_name,
         },
-      }
-    })
+      };
+    });
 
-    return results
+    return results;
   }
 
-  async getPortfolioSuggestions(userId: string, limit = 5): Promise<PortfolioSearchResult[]> {
+  async getPortfolioSuggestions(
+    userId: string,
+    limit = 5,
+  ): Promise<PortfolioSearchResult[]> {
     // Get user's own portfolios first
-    const userPortfolios = await this.portfolioService.getUserPortfolios(userId)
-    const userPortfolioResults = userPortfolios.slice(0, limit).map(p => ({
+    const userPortfolios =
+      await this.portfolioService.getUserPortfolios(userId);
+    const userPortfolioResults = userPortfolios.slice(0, limit).map((p) => ({
       id: p.id,
       name: p.name,
       visibility: p.visibility,
       createdAt: p.createdAt,
       metrics: p.metrics,
       user: { id: userId },
-    }))
+    }));
 
     if (userPortfolioResults.length >= limit) {
-      return userPortfolioResults
+      return userPortfolioResults;
     }
 
     // Fill remaining slots with popular public portfolios
-    const remaining = limit - userPortfolioResults.length
-    const popularPortfolios = await this.getPopularPortfolios(remaining * 2)
+    const remaining = limit - userPortfolioResults.length;
+    const popularPortfolios = await this.getPopularPortfolios(remaining * 2);
 
     // Filter out user's own portfolios and take remaining slots
     const filteredPopular = popularPortfolios
-      .filter(p => p.user.id !== userId)
-      .slice(0, remaining)
+      .filter((p) => p.user.id !== userId)
+      .slice(0, remaining);
 
-    return [...userPortfolioResults, ...filteredPopular]
+    return [...userPortfolioResults, ...filteredPopular];
   }
 
+  private async getTopPortfoliosForUsers(
+    userIds: string[],
+  ): Promise<Map<string, any>> {
+    const topPortfolios = new Map<string, any>();
 
-  private async getTopPortfoliosForUsers(userIds: string[]): Promise<Map<string, any>> {
-    const topPortfolios = new Map<string, any>()
-
-    if (userIds.length === 0) return topPortfolios
+    if (userIds.length === 0) return topPortfolios;
 
     // Get the top performing portfolio for each user
     const portfolios = await this.portfolios
       .createQueryBuilder('portfolio')
       .leftJoin(
-        subQuery => {
+        (subQuery) => {
           return subQuery
             .select('portfolio_id', 'portfolio_id')
             .addSelect('AVG(return_percent)', 'avgReturn')
             .from('portfolio_snapshots_v2', 'snapshot')
             .where('snapshot.date >= :startDate')
-            .groupBy('portfolio_id')
+            .groupBy('portfolio_id');
         },
         'metrics',
-        'portfolio.id = metrics.portfolio_id'
+        'portfolio.id = metrics.portfolio_id',
       )
       .where('portfolio.user_id IN (:...userIds)', { userIds })
       .andWhere('portfolio.visibility != :private', { private: 'private' })
@@ -354,29 +374,28 @@ export class SearchService {
         'metrics.avgReturn',
       ])
       .orderBy('metrics.avgReturn', 'DESC')
-      .getRawMany()
+      .getRawMany();
 
     // Group by user and take the top portfolio for each
-    const userPortfolios = new Map<string, any[]>()
+    const userPortfolios = new Map<string, any[]>();
     for (const portfolio of portfolios) {
       if (!userPortfolios.has(portfolio.portfolio_user_id)) {
-        userPortfolios.set(portfolio.portfolio_user_id, [])
+        userPortfolios.set(portfolio.portfolio_user_id, []);
       }
-      userPortfolios.get(portfolio.portfolio_user_id)!.push(portfolio)
+      userPortfolios.get(portfolio.portfolio_user_id)!.push(portfolio);
     }
 
     for (const [userId, userPortfoliosList] of userPortfolios.entries()) {
       if (userPortfoliosList.length > 0) {
-        const topPortfolio = userPortfoliosList[0]
+        const topPortfolio = userPortfoliosList[0];
         topPortfolios.set(userId, {
           id: topPortfolio.portfolio_id,
           name: topPortfolio.portfolio_name,
           returnPercent: Number(topPortfolio.metrics_avgReturn) || 0,
-        })
+        });
       }
     }
 
-    return topPortfolios
+    return topPortfolios;
   }
 }
-

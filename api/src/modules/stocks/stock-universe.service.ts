@@ -1,108 +1,120 @@
-import { Injectable, Logger } from '@nestjs/common'
-import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
-import { StockSymbol } from '../../entities/StockSymbol.entity'
+import { Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { StockSymbol } from '../../entities/StockSymbol.entity';
 
 export interface StockSearchResult {
-  symbol: string
-  name: string
-  exchange: 'NSE' | 'BSE'
-  isin?: string
-  series?: string
+  symbol: string;
+  name: string;
+  exchange: 'NSE' | 'BSE';
+  isin?: string;
+  series?: string;
 }
 
 @Injectable()
 export class StockUniverseService {
-  private readonly logger = new Logger(StockUniverseService.name)
+  private readonly logger = new Logger(StockUniverseService.name);
 
   constructor(
-    @InjectRepository(StockSymbol) private readonly symbols: Repository<StockSymbol>,
+    @InjectRepository(StockSymbol)
+    private readonly symbols: Repository<StockSymbol>,
   ) {}
 
   /**
    * Search stocks for autocomplete
    */
-  async searchStocks(query: string, limit: number = 20): Promise<StockSearchResult[]> {
-    const searchTerm = query.toUpperCase().trim()
-    
+  async searchStocks(
+    query: string,
+    limit: number = 20,
+  ): Promise<StockSearchResult[]> {
+    const searchTerm = query.toUpperCase().trim();
+
     if (searchTerm.length < 2) {
-      return []
+      return [];
     }
 
     const results = await this.symbols
       .createQueryBuilder('symbol')
       .select([
         'symbol.symbol',
-        'symbol.name', 
+        'symbol.name',
         'symbol.exchange',
         'symbol.isin',
-        'symbol.series'
+        'symbol.series',
       ])
       .where('symbol.status = :status', { status: 'active' })
-      .andWhere('(symbol.symbol LIKE :search OR symbol.name LIKE :search OR symbol.isin LIKE :search)', {
-        search: `%${searchTerm}%`
-      })
+      .andWhere(
+        '(symbol.symbol LIKE :search OR symbol.name LIKE :search OR symbol.isin LIKE :search)',
+        {
+          search: `%${searchTerm}%`,
+        },
+      )
       .orderBy('symbol.symbol', 'ASC')
       .limit(limit)
-      .getMany()
+      .getMany();
 
-    return results.map(s => ({
+    return results.map((s) => ({
       symbol: s.symbol,
       name: s.name || s.symbol,
       exchange: s.exchange as 'NSE' | 'BSE',
       isin: s.isin || undefined,
-      series: s.series || undefined
-    }))
+      series: s.series || undefined,
+    }));
   }
 
   /**
    * Get all active symbols for a specific exchange
    */
-  async getActiveSymbols(exchange?: 'NSE' | 'BSE'): Promise<StockSearchResult[]> {
+  async getActiveSymbols(
+    exchange?: 'NSE' | 'BSE',
+  ): Promise<StockSearchResult[]> {
     const query = this.symbols
       .createQueryBuilder('symbol')
       .select([
         'symbol.symbol',
         'symbol.name',
-        'symbol.exchange', 
+        'symbol.exchange',
         'symbol.isin',
-        'symbol.series'
+        'symbol.series',
       ])
       .where('symbol.status = :status', { status: 'active' })
-      .orderBy('symbol.symbol', 'ASC')
+      .orderBy('symbol.symbol', 'ASC');
 
     if (exchange) {
-      query.andWhere('symbol.exchange = :exchange', { exchange })
+      query.andWhere('symbol.exchange = :exchange', { exchange });
     }
 
-    const results = await query.getMany()
+    const results = await query.getMany();
 
-    return results.map(s => ({
+    return results.map((s) => ({
       symbol: s.symbol,
       name: s.name || s.symbol,
       exchange: s.exchange as 'NSE' | 'BSE',
       isin: s.isin || undefined,
-      series: s.series || undefined
-    }))
+      series: s.series || undefined,
+    }));
   }
 
   /**
    * Get symbol details by symbol and exchange
    */
-  async getSymbolDetails(symbol: string, exchange: 'NSE' | 'BSE'): Promise<StockSearchResult | null> {
+  async getSymbolDetails(
+    symbol: string,
+    exchange: 'NSE' | 'BSE',
+  ): Promise<StockSearchResult | null> {
     const result = await this.symbols.findOne({
-      where: { symbol: symbol.toUpperCase(), exchange, status: 'active' }
-    })
+      where: { symbol: symbol.toUpperCase(), exchange, status: 'active' },
+    });
 
-    if (!result) return null
+    if (!result) return null;
 
     return {
       symbol: result.symbol,
       name: result.name || result.symbol,
       exchange: result.exchange as 'NSE' | 'BSE',
       isin: result.isin || undefined,
-      series: result.series || undefined
-    }
+      series: result.series || undefined,
+    };
   }
 
   /**
@@ -110,34 +122,38 @@ export class StockUniverseService {
    */
   async getSymbolByIsin(isin: string): Promise<StockSearchResult | null> {
     const result = await this.symbols.findOne({
-      where: { isin: isin.toUpperCase(), status: 'active' }
-    })
+      where: { isin: isin.toUpperCase(), status: 'active' },
+    });
 
-    if (!result) return null
+    if (!result) return null;
 
     return {
       symbol: result.symbol,
       name: result.name || result.symbol,
       exchange: result.exchange as 'NSE' | 'BSE',
       isin: result.isin || undefined,
-      series: result.series || undefined
-    }
+      series: result.series || undefined,
+    };
   }
 
   /**
    * Get total count of active symbols
    */
-  async getActiveSymbolCount(): Promise<{ nse: number; bse: number; total: number }> {
+  async getActiveSymbolCount(): Promise<{
+    nse: number;
+    bse: number;
+    total: number;
+  }> {
     const [nseCount, bseCount] = await Promise.all([
       this.symbols.count({ where: { exchange: 'NSE', status: 'active' } }),
-      this.symbols.count({ where: { exchange: 'BSE', status: 'active' } })
-    ])
+      this.symbols.count({ where: { exchange: 'BSE', status: 'active' } }),
+    ]);
 
     return {
       nse: nseCount,
       bse: bseCount,
-      total: nseCount + bseCount
-    }
+      total: nseCount + bseCount,
+    };
   }
 
   /**
@@ -147,10 +163,22 @@ export class StockUniverseService {
     // This could be enhanced with actual usage analytics
     // For now, return a curated list of popular stocks
     const popularSymbols = [
-      'RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'ICICIBANK',
-      'HINDUNILVR', 'ITC', 'SBIN', 'BHARTIARTL', 'KOTAKBANK',
-      'AXISBANK', 'ASIANPAINT', 'MARUTI', 'HCLTECH', 'SUNPHARMA'
-    ]
+      'RELIANCE',
+      'TCS',
+      'HDFCBANK',
+      'INFY',
+      'ICICIBANK',
+      'HINDUNILVR',
+      'ITC',
+      'SBIN',
+      'BHARTIARTL',
+      'KOTAKBANK',
+      'AXISBANK',
+      'ASIANPAINT',
+      'MARUTI',
+      'HCLTECH',
+      'SUNPHARMA',
+    ];
 
     const results = await this.symbols
       .createQueryBuilder('symbol')
@@ -159,20 +187,20 @@ export class StockUniverseService {
         'symbol.name',
         'symbol.exchange',
         'symbol.isin',
-        'symbol.series'
+        'symbol.series',
       ])
       .where('symbol.status = :status', { status: 'active' })
       .andWhere('symbol.symbol IN (:...symbols)', { symbols: popularSymbols })
       .orderBy('symbol.symbol', 'ASC')
       .limit(limit)
-      .getMany()
+      .getMany();
 
-    return results.map(s => ({
+    return results.map((s) => ({
       symbol: s.symbol,
       name: s.name || s.symbol,
       exchange: s.exchange as 'NSE' | 'BSE',
       isin: s.isin || undefined,
-      series: s.series || undefined
-    }))
+      series: s.series || undefined,
+    }));
   }
 }

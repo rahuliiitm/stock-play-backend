@@ -1,61 +1,67 @@
-import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from 'typeorm'
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 
 @Entity('market_movers')
 @Index(['date', 'period_type', 'mover_type'])
 @Index(['symbol', 'date'])
 export class MarketMovers {
   @PrimaryGeneratedColumn('uuid')
-  id!: string
+  id!: string;
 
   @Column({ type: 'varchar', length: 16 })
-  symbol!: string
+  symbol!: string;
 
   @Column({ type: 'varchar', length: 100 })
-  company_name!: string
+  company_name!: string;
 
   @Column({ type: 'date' })
-  date!: Date
+  date!: Date;
 
   @Column({ type: 'varchar', length: 10 })
-  period_type!: 'daily' | 'weekly' | 'monthly'
+  period_type!: 'daily' | 'weekly' | 'monthly';
 
   @Column({ type: 'varchar', length: 10 })
-  mover_type!: 'gainer' | 'loser'
+  mover_type!: 'gainer' | 'loser';
 
   // Price Data
   @Column({ type: 'decimal', precision: 18, scale: 2 })
-  current_price_amount!: number
+  current_price_amount!: number;
 
   @Column({ type: 'decimal', precision: 18, scale: 2 })
-  previous_price_amount!: number
+  previous_price_amount!: number;
 
   @Column({ type: 'decimal', precision: 18, scale: 2 })
-  price_change_amount!: number
+  price_change_amount!: number;
 
   @Column({ type: 'decimal', precision: 8, scale: 4 })
-  price_change_percent!: number
+  price_change_percent!: number;
 
   // Volume Data
   @Column({ type: 'bigint', nullable: true })
-  volume!: number | null
+  volume!: number | null;
 
   @Column({ type: 'bigint', nullable: true })
-  avg_volume!: number | null
+  avg_volume!: number | null;
 
   // Portfolio Impact
   @Column({ type: 'integer' })
-  portfolios_holding_count!: number
+  portfolios_holding_count!: number;
 
   @Column({ type: 'decimal', precision: 18, scale: 2 })
-  total_market_value_amount!: number
+  total_market_value_amount!: number;
 
   @Column({ type: 'decimal', precision: 18, scale: 2 })
-  avg_portfolio_impact_amount!: number
+  avg_portfolio_impact_amount!: number;
 
   // Ranking
   @Column({ type: 'integer' })
-  rank!: number
+  rank!: number;
 
   @CreateDateColumn({ type: 'timestamptz' })
-  created_at!: Date
-} 
+  created_at!: Date;
+}

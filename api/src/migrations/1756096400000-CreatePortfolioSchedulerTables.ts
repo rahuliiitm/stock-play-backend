@@ -1,11 +1,13 @@
-import { MigrationInterface, QueryRunner } from "typeorm";
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CreatePortfolioSchedulerTables1756096400000 implements MigrationInterface {
-    name = 'CreatePortfolioSchedulerTables1756096400000'
+export class CreatePortfolioSchedulerTables1756096400000
+  implements MigrationInterface
+{
+  name = 'CreatePortfolioSchedulerTables1756096400000';
 
-    public async up(queryRunner: QueryRunner): Promise<void> {
-        // Create broker_accounts table
-        await queryRunner.query(`
+  public async up(queryRunner: QueryRunner): Promise<void> {
+    // Create broker_accounts table
+    await queryRunner.query(`
             CREATE TABLE "broker_accounts" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "user_id" uuid NOT NULL,
@@ -23,8 +25,8 @@ export class CreatePortfolioSchedulerTables1756096400000 implements MigrationInt
             )
         `);
 
-        // Create real_holdings table
-        await queryRunner.query(`
+    // Create real_holdings table
+    await queryRunner.query(`
             CREATE TABLE "real_holdings" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "broker_account_id" uuid NOT NULL,
@@ -45,8 +47,8 @@ export class CreatePortfolioSchedulerTables1756096400000 implements MigrationInt
             )
         `);
 
-        // Create real_positions table
-        await queryRunner.query(`
+    // Create real_positions table
+    await queryRunner.query(`
             CREATE TABLE "real_positions" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "broker_account_id" uuid NOT NULL,
@@ -76,8 +78,8 @@ export class CreatePortfolioSchedulerTables1756096400000 implements MigrationInt
             )
         `);
 
-        // Create order_history table
-        await queryRunner.query(`
+    // Create order_history table
+    await queryRunner.query(`
             CREATE TABLE "order_history" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "broker_account_id" uuid NOT NULL,
@@ -110,8 +112,8 @@ export class CreatePortfolioSchedulerTables1756096400000 implements MigrationInt
             )
         `);
 
-        // Create order_quantity_changes table
-        await queryRunner.query(`
+    // Create order_quantity_changes table
+    await queryRunner.query(`
             CREATE TABLE "order_quantity_changes" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "order_history_id" uuid NOT NULL,
@@ -128,8 +130,8 @@ export class CreatePortfolioSchedulerTables1756096400000 implements MigrationInt
             )
         `);
 
-        // Create portfolio_snapshots table
-        await queryRunner.query(`
+    // Create portfolio_snapshots table
+    await queryRunner.query(`
             CREATE TABLE "portfolio_snapshots" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "broker_account_id" uuid NOT NULL,
@@ -152,8 +154,8 @@ export class CreatePortfolioSchedulerTables1756096400000 implements MigrationInt
             )
         `);
 
-        // Create sync_batches table
-        await queryRunner.query(`
+    // Create sync_batches table
+    await queryRunner.query(`
             CREATE TABLE "sync_batches" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "broker_account_id" uuid NOT NULL,
@@ -175,64 +177,120 @@ export class CreatePortfolioSchedulerTables1756096400000 implements MigrationInt
             )
         `);
 
-        // Create indexes for performance
-        await queryRunner.query(`CREATE INDEX "IDX_order_history_broker_symbol" ON "order_history" ("broker_account_id", "symbol")`);
-        await queryRunner.query(`CREATE INDEX "IDX_order_history_groww_order_id" ON "order_history" ("groww_order_id")`);
-        await queryRunner.query(`CREATE INDEX "IDX_order_history_created_at" ON "order_history" ("created_at")`);
-        await queryRunner.query(`CREATE INDEX "IDX_order_history_sync_batch" ON "order_history" ("sync_batch_id")`);
-        
-        await queryRunner.query(`CREATE INDEX "IDX_order_quantity_changes_symbol" ON "order_quantity_changes" ("symbol")`);
-        await queryRunner.query(`CREATE INDEX "IDX_order_quantity_changes_detected_at" ON "order_quantity_changes" ("detected_at")`);
-        await queryRunner.query(`CREATE INDEX "IDX_order_quantity_changes_sync_batch" ON "order_quantity_changes" ("sync_batch_id")`);
-        
-        await queryRunner.query(`CREATE INDEX "IDX_portfolio_snapshots_date" ON "portfolio_snapshots" ("snapshot_date")`);
-        await queryRunner.query(`CREATE INDEX "IDX_portfolio_snapshots_broker" ON "portfolio_snapshots" ("broker_account_id")`);
-        
-        await queryRunner.query(`CREATE INDEX "IDX_sync_batches_broker" ON "sync_batches" ("broker_account_id")`);
-        await queryRunner.query(`CREATE INDEX "IDX_sync_batches_started_at" ON "sync_batches" ("started_at")`);
-        await queryRunner.query(`CREATE INDEX "IDX_sync_batches_status" ON "sync_batches" ("status")`);
+    // Create indexes for performance
+    await queryRunner.query(
+      `CREATE INDEX "IDX_order_history_broker_symbol" ON "order_history" ("broker_account_id", "symbol")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "IDX_order_history_groww_order_id" ON "order_history" ("groww_order_id")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "IDX_order_history_created_at" ON "order_history" ("created_at")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "IDX_order_history_sync_batch" ON "order_history" ("sync_batch_id")`,
+    );
 
-        // Add foreign key constraints
-        await queryRunner.query(`ALTER TABLE "broker_accounts" ADD CONSTRAINT "FK_broker_accounts_user_id" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE`);
-        await queryRunner.query(`ALTER TABLE "real_holdings" ADD CONSTRAINT "FK_real_holdings_broker_account_id" FOREIGN KEY ("broker_account_id") REFERENCES "broker_accounts"("id") ON DELETE CASCADE`);
-        await queryRunner.query(`ALTER TABLE "real_positions" ADD CONSTRAINT "FK_real_positions_broker_account_id" FOREIGN KEY ("broker_account_id") REFERENCES "broker_accounts"("id") ON DELETE CASCADE`);
-        await queryRunner.query(`ALTER TABLE "order_history" ADD CONSTRAINT "FK_order_history_broker_account_id" FOREIGN KEY ("broker_account_id") REFERENCES "broker_accounts"("id") ON DELETE CASCADE`);
-        await queryRunner.query(`ALTER TABLE "order_quantity_changes" ADD CONSTRAINT "FK_order_quantity_changes_order_history_id" FOREIGN KEY ("order_history_id") REFERENCES "order_history"("id") ON DELETE CASCADE`);
-        await queryRunner.query(`ALTER TABLE "portfolio_snapshots" ADD CONSTRAINT "FK_portfolio_snapshots_broker_account_id" FOREIGN KEY ("broker_account_id") REFERENCES "broker_accounts"("id") ON DELETE CASCADE`);
-        await queryRunner.query(`ALTER TABLE "sync_batches" ADD CONSTRAINT "FK_sync_batches_broker_account_id" FOREIGN KEY ("broker_account_id") REFERENCES "broker_accounts"("id") ON DELETE CASCADE`);
-    }
+    await queryRunner.query(
+      `CREATE INDEX "IDX_order_quantity_changes_symbol" ON "order_quantity_changes" ("symbol")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "IDX_order_quantity_changes_detected_at" ON "order_quantity_changes" ("detected_at")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "IDX_order_quantity_changes_sync_batch" ON "order_quantity_changes" ("sync_batch_id")`,
+    );
 
-    public async down(queryRunner: QueryRunner): Promise<void> {
-        // Drop foreign key constraints
-        await queryRunner.query(`ALTER TABLE "sync_batches" DROP CONSTRAINT "FK_sync_batches_broker_account_id"`);
-        await queryRunner.query(`ALTER TABLE "portfolio_snapshots" DROP CONSTRAINT "FK_portfolio_snapshots_broker_account_id"`);
-        await queryRunner.query(`ALTER TABLE "order_quantity_changes" DROP CONSTRAINT "FK_order_quantity_changes_order_history_id"`);
-        await queryRunner.query(`ALTER TABLE "order_history" DROP CONSTRAINT "FK_order_history_broker_account_id"`);
-        await queryRunner.query(`ALTER TABLE "real_positions" DROP CONSTRAINT "FK_real_positions_broker_account_id"`);
-        await queryRunner.query(`ALTER TABLE "real_holdings" DROP CONSTRAINT "FK_real_holdings_broker_account_id"`);
-        await queryRunner.query(`ALTER TABLE "broker_accounts" DROP CONSTRAINT "FK_broker_accounts_user_id"`);
+    await queryRunner.query(
+      `CREATE INDEX "IDX_portfolio_snapshots_date" ON "portfolio_snapshots" ("snapshot_date")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "IDX_portfolio_snapshots_broker" ON "portfolio_snapshots" ("broker_account_id")`,
+    );
 
-        // Drop indexes
-        await queryRunner.query(`DROP INDEX "IDX_sync_batches_status"`);
-        await queryRunner.query(`DROP INDEX "IDX_sync_batches_started_at"`);
-        await queryRunner.query(`DROP INDEX "IDX_sync_batches_broker"`);
-        await queryRunner.query(`DROP INDEX "IDX_portfolio_snapshots_broker"`);
-        await queryRunner.query(`DROP INDEX "IDX_portfolio_snapshots_date"`);
-        await queryRunner.query(`DROP INDEX "IDX_order_quantity_changes_sync_batch"`);
-        await queryRunner.query(`DROP INDEX "IDX_order_quantity_changes_detected_at"`);
-        await queryRunner.query(`DROP INDEX "IDX_order_quantity_changes_symbol"`);
-        await queryRunner.query(`DROP INDEX "IDX_order_history_sync_batch"`);
-        await queryRunner.query(`DROP INDEX "IDX_order_history_created_at"`);
-        await queryRunner.query(`DROP INDEX "IDX_order_history_groww_order_id"`);
-        await queryRunner.query(`DROP INDEX "IDX_order_history_broker_symbol"`);
+    await queryRunner.query(
+      `CREATE INDEX "IDX_sync_batches_broker" ON "sync_batches" ("broker_account_id")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "IDX_sync_batches_started_at" ON "sync_batches" ("started_at")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "IDX_sync_batches_status" ON "sync_batches" ("status")`,
+    );
 
-        // Drop tables
-        await queryRunner.query(`DROP TABLE "sync_batches"`);
-        await queryRunner.query(`DROP TABLE "portfolio_snapshots"`);
-        await queryRunner.query(`DROP TABLE "order_quantity_changes"`);
-        await queryRunner.query(`DROP TABLE "order_history"`);
-        await queryRunner.query(`DROP TABLE "real_positions"`);
-        await queryRunner.query(`DROP TABLE "real_holdings"`);
-        await queryRunner.query(`DROP TABLE "broker_accounts"`);
-    }
+    // Add foreign key constraints
+    await queryRunner.query(
+      `ALTER TABLE "broker_accounts" ADD CONSTRAINT "FK_broker_accounts_user_id" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "real_holdings" ADD CONSTRAINT "FK_real_holdings_broker_account_id" FOREIGN KEY ("broker_account_id") REFERENCES "broker_accounts"("id") ON DELETE CASCADE`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "real_positions" ADD CONSTRAINT "FK_real_positions_broker_account_id" FOREIGN KEY ("broker_account_id") REFERENCES "broker_accounts"("id") ON DELETE CASCADE`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "order_history" ADD CONSTRAINT "FK_order_history_broker_account_id" FOREIGN KEY ("broker_account_id") REFERENCES "broker_accounts"("id") ON DELETE CASCADE`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "order_quantity_changes" ADD CONSTRAINT "FK_order_quantity_changes_order_history_id" FOREIGN KEY ("order_history_id") REFERENCES "order_history"("id") ON DELETE CASCADE`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "portfolio_snapshots" ADD CONSTRAINT "FK_portfolio_snapshots_broker_account_id" FOREIGN KEY ("broker_account_id") REFERENCES "broker_accounts"("id") ON DELETE CASCADE`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "sync_batches" ADD CONSTRAINT "FK_sync_batches_broker_account_id" FOREIGN KEY ("broker_account_id") REFERENCES "broker_accounts"("id") ON DELETE CASCADE`,
+    );
+  }
+
+  public async down(queryRunner: QueryRunner): Promise<void> {
+    // Drop foreign key constraints
+    await queryRunner.query(
+      `ALTER TABLE "sync_batches" DROP CONSTRAINT "FK_sync_batches_broker_account_id"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "portfolio_snapshots" DROP CONSTRAINT "FK_portfolio_snapshots_broker_account_id"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "order_quantity_changes" DROP CONSTRAINT "FK_order_quantity_changes_order_history_id"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "order_history" DROP CONSTRAINT "FK_order_history_broker_account_id"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "real_positions" DROP CONSTRAINT "FK_real_positions_broker_account_id"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "real_holdings" DROP CONSTRAINT "FK_real_holdings_broker_account_id"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "broker_accounts" DROP CONSTRAINT "FK_broker_accounts_user_id"`,
+    );
+
+    // Drop indexes
+    await queryRunner.query(`DROP INDEX "IDX_sync_batches_status"`);
+    await queryRunner.query(`DROP INDEX "IDX_sync_batches_started_at"`);
+    await queryRunner.query(`DROP INDEX "IDX_sync_batches_broker"`);
+    await queryRunner.query(`DROP INDEX "IDX_portfolio_snapshots_broker"`);
+    await queryRunner.query(`DROP INDEX "IDX_portfolio_snapshots_date"`);
+    await queryRunner.query(
+      `DROP INDEX "IDX_order_quantity_changes_sync_batch"`,
+    );
+    await queryRunner.query(
+      `DROP INDEX "IDX_order_quantity_changes_detected_at"`,
+    );
+    await queryRunner.query(`DROP INDEX "IDX_order_quantity_changes_symbol"`);
+    await queryRunner.query(`DROP INDEX "IDX_order_history_sync_batch"`);
+    await queryRunner.query(`DROP INDEX "IDX_order_history_created_at"`);
+    await queryRunner.query(`DROP INDEX "IDX_order_history_groww_order_id"`);
+    await queryRunner.query(`DROP INDEX "IDX_order_history_broker_symbol"`);
+
+    // Drop tables
+    await queryRunner.query(`DROP TABLE "sync_batches"`);
+    await queryRunner.query(`DROP TABLE "portfolio_snapshots"`);
+    await queryRunner.query(`DROP TABLE "order_quantity_changes"`);
+    await queryRunner.query(`DROP TABLE "order_history"`);
+    await queryRunner.query(`DROP TABLE "real_positions"`);
+    await queryRunner.query(`DROP TABLE "real_holdings"`);
+    await queryRunner.query(`DROP TABLE "broker_accounts"`);
+  }
 }

@@ -1,6 +1,6 @@
-import { Global, Module } from '@nestjs/common'
-import { JwtModule } from '@nestjs/jwt'
-import { ConfigModule, ConfigService } from '@nestjs/config'
+import { Global, Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Global()
 @Module({
@@ -16,4 +16,4 @@ import { ConfigModule, ConfigService } from '@nestjs/config'
   ],
   exports: [JwtModule],
 })
-export class CoreJwtModule {} 
+export class CoreJwtModule {}

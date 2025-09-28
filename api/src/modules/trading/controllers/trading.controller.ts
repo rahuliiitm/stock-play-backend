@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Delete, Body, Param, Query, Logger } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Body,
+  Param,
+  Query,
+  Logger,
+} from '@nestjs/common';
 import type { SubscriptionConfig } from '../services/live-data-feed.service';
 import { LiveDataFeedService } from '../services/live-data-feed.service';
 import { CandleAggregationService } from '../services/candle-aggregation.service';
@@ -33,7 +42,9 @@ export class TradingController {
   async createSubscription(@Body() config: SubscriptionConfig) {
     try {
       const subscriptionId = await this.liveDataFeedService.subscribe(config);
-      this.logger.log(`Created subscription ${subscriptionId} for ${config.symbols.length} symbols`);
+      this.logger.log(
+        `Created subscription ${subscriptionId} for ${config.symbols.length} symbols`,
+      );
 
       return {
         success: true,
@@ -77,7 +88,8 @@ export class TradingController {
   @Get('subscriptions/:subscriptionId')
   async getSubscriptionStatus(@Param('subscriptionId') subscriptionId: string) {
     try {
-      const config = this.liveDataFeedService.getSubscriptionStatus(subscriptionId);
+      const config =
+        this.liveDataFeedService.getSubscriptionStatus(subscriptionId);
       if (!config) {
         return {
           success: false,
@@ -135,7 +147,10 @@ export class TradingController {
         message: 'Data fetch triggered successfully',
       };
     } catch (error) {
-      this.logger.error(`Failed to trigger data fetch for ${subscriptionId}:`, error);
+      this.logger.error(
+        `Failed to trigger data fetch for ${subscriptionId}:`,
+        error,
+      );
       return {
         success: false,
         error: error.message,
@@ -177,9 +192,19 @@ export class TradingController {
   async getAggregatedCandle(
     @Param('symbol') symbol: string,
     @Param('timeframe') timeframe: TimeframeType,
-  ): Promise<{ success: boolean; symbol?: string; timeframe?: string; data?: AggregatedCandleResponse | null; error?: string }> {
+  ): Promise<{
+    success: boolean;
+    symbol?: string;
+    timeframe?: string;
+    data?: AggregatedCandleResponse | null;
+    error?: string;
+  }> {
     try {
-      const aggregatedData = await this.candleAggregationService.getAggregatedCandle(symbol, timeframe);
+      const aggregatedData =
+        await this.candleAggregationService.getAggregatedCandle(
+          symbol,
+          timeframe,
+        );
 
       return {
         success: true,
@@ -188,7 +213,10 @@ export class TradingController {
         data: aggregatedData,
       };
     } catch (error) {
-      this.logger.error(`Failed to get aggregated data for ${symbol}:${timeframe}:`, error);
+      this.logger.error(
+        `Failed to get aggregated data for ${symbol}:${timeframe}:`,
+        error,
+      );
       return {
         success: false,
         error: error.message,
@@ -224,7 +252,9 @@ export class TradingController {
   @Post('aggregation/cleanup')
   async cleanupAggregations(@Query('olderThanMs') olderThanMs?: string) {
     try {
-      const cutoffMs = olderThanMs ? parseInt(olderThanMs) : 24 * 60 * 60 * 1000; // Default 24 hours
+      const cutoffMs = olderThanMs
+        ? parseInt(olderThanMs)
+        : 24 * 60 * 60 * 1000; // Default 24 hours
       await this.candleAggregationService.cleanupOldAggregations(cutoffMs);
       this.logger.log(`Cleaned up aggregations older than ${cutoffMs}ms`);
 
@@ -252,7 +282,9 @@ export class TradingController {
       return {
         success: true,
         isProcessing,
-        message: isProcessing ? 'Event processing is active' : 'Event processing is paused',
+        message: isProcessing
+          ? 'Event processing is active'
+          : 'Event processing is paused',
       };
     } catch (error) {
       this.logger.error('Failed to get processing status:', error);
@@ -311,9 +343,7 @@ export class TradingController {
    * Emit custom event (for testing)
    */
   @Post('events')
-  async emitCustomEvent(
-    @Body() body: { eventName: string; data: any },
-  ) {
+  async emitCustomEvent(@Body() body: { eventName: string; data: any }) {
     try {
       this.eventListenerService.emitCustomEvent(body.eventName, body.data);
       this.logger.log(`Emitted custom event: ${body.eventName}`);

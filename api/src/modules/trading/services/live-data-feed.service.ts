@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -8,7 +13,7 @@ import {
   TimeframeType,
   REDIS_KEYS,
   getCandleEntity,
-  CandleEntity
+  CandleEntity,
 } from '../schemas/candle.schema';
 
 export interface LiveCandleData {
@@ -61,7 +66,9 @@ export class LiveDataFeedService implements OnModuleInit, OnModuleDestroy {
       updateIntervalMs: config.updateIntervalMs || this.DEFAULT_UPDATE_INTERVAL,
     });
 
-    this.logger.log(`Created subscription ${subscriptionId} for ${config.symbols.length} symbols`);
+    this.logger.log(
+      `Created subscription ${subscriptionId} for ${config.symbols.length} symbols`,
+    );
 
     // Start the data feed
     await this.startSubscription(subscriptionId);
@@ -117,7 +124,9 @@ export class LiveDataFeedService implements OnModuleInit, OnModuleDestroy {
     }, config.updateIntervalMs);
 
     this.updateIntervals.set(subscriptionId, interval);
-    this.logger.log(`Started subscription ${subscriptionId} with ${config.updateIntervalMs}ms interval`);
+    this.logger.log(
+      `Started subscription ${subscriptionId} with ${config.updateIntervalMs}ms interval`,
+    );
   }
 
   private stopSubscription(subscriptionId: string): void {
@@ -134,7 +143,10 @@ export class LiveDataFeedService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private async fetchAndProcessData(subscriptionId: string, config: SubscriptionConfig): Promise<void> {
+  private async fetchAndProcessData(
+    subscriptionId: string,
+    config: SubscriptionConfig,
+  ): Promise<void> {
     const redis = getRedis();
     if (!redis) {
       this.logger.warn('Redis not available for live data processing');
@@ -159,7 +171,7 @@ export class LiveDataFeedService implements OnModuleInit, OnModuleDestroy {
         await redis.setex(
           `${REDIS_KEYS.LIVE_DATA_FEED}:${symbol}`,
           300, // 5 minutes TTL
-          JSON.stringify(candleData)
+          JSON.stringify(candleData),
         );
 
         // Emit event for real-time processing
@@ -169,8 +181,9 @@ export class LiveDataFeedService implements OnModuleInit, OnModuleDestroy {
           timeframes: config.timeframes,
         });
 
-        this.logger.debug(`Processed live data for ${symbol}: ₹${candleData.price}`);
-
+        this.logger.debug(
+          `Processed live data for ${symbol}: ₹${candleData.price}`,
+        );
       } catch (error) {
         this.logger.error(`Failed to fetch data for ${symbol}:`, error);
       }

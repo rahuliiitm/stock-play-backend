@@ -1,11 +1,13 @@
-import { MigrationInterface, QueryRunner } from "typeorm";
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CreatePortfolioV2Entities1756096298000 implements MigrationInterface {
-    name = 'CreatePortfolioV2Entities1756096298000'
+export class CreatePortfolioV2Entities1756096298000
+  implements MigrationInterface
+{
+  name = 'CreatePortfolioV2Entities1756096298000';
 
-    public async up(queryRunner: QueryRunner): Promise<void> {
-        // Create portfolios_v2 table
-        await queryRunner.query(`
+  public async up(queryRunner: QueryRunner): Promise<void> {
+    // Create portfolios_v2 table
+    await queryRunner.query(`
             CREATE TABLE "portfolios_v2" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "user_id" uuid NOT NULL,
@@ -17,13 +19,13 @@ export class CreatePortfolioV2Entities1756096298000 implements MigrationInterfac
             )
         `);
 
-        // Create unique index on user_id, name
-        await queryRunner.query(`
+    // Create unique index on user_id, name
+    await queryRunner.query(`
             CREATE UNIQUE INDEX "IDX_portfolios_v2_user_id_name" ON "portfolios_v2" ("user_id", "name")
         `);
 
-        // Create holdings table
-        await queryRunner.query(`
+    // Create holdings table
+    await queryRunner.query(`
             CREATE TABLE "holdings" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "portfolio_id" uuid NOT NULL,
@@ -36,13 +38,13 @@ export class CreatePortfolioV2Entities1756096298000 implements MigrationInterfac
             )
         `);
 
-        // Create unique index on portfolio_id, symbol
-        await queryRunner.query(`
+    // Create unique index on portfolio_id, symbol
+    await queryRunner.query(`
             CREATE UNIQUE INDEX "IDX_holdings_portfolio_symbol" ON "holdings" ("portfolio_id", "symbol")
         `);
 
-        // Create portfolio_transactions_v2 table
-        await queryRunner.query(`
+    // Create portfolio_transactions_v2 table
+    await queryRunner.query(`
             CREATE TABLE "portfolio_transactions_v2" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "portfolio_id" uuid NOT NULL,
@@ -57,13 +59,13 @@ export class CreatePortfolioV2Entities1756096298000 implements MigrationInterfac
             )
         `);
 
-        // Create index on portfolio_id, created_at
-        await queryRunner.query(`
+    // Create index on portfolio_id, created_at
+    await queryRunner.query(`
             CREATE INDEX "IDX_portfolio_transactions_v2_portfolio_created" ON "portfolio_transactions_v2" ("portfolio_id", "created_at")
         `);
 
-        // Create portfolio_snapshots_v2 table
-        await queryRunner.query(`
+    // Create portfolio_snapshots_v2 table
+    await queryRunner.query(`
             CREATE TABLE "portfolio_snapshots_v2" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "portfolio_id" uuid NOT NULL,
@@ -77,45 +79,42 @@ export class CreatePortfolioV2Entities1756096298000 implements MigrationInterfac
             )
         `);
 
-        // Create unique index on portfolio_id, date
-        await queryRunner.query(`
+    // Create unique index on portfolio_id, date
+    await queryRunner.query(`
             CREATE UNIQUE INDEX "IDX_portfolio_snapshots_v2_portfolio_date" ON "portfolio_snapshots_v2" ("portfolio_id", "date")
         `);
 
-
-        // Add foreign key constraints
-        await queryRunner.query(`
+    // Add foreign key constraints
+    await queryRunner.query(`
             ALTER TABLE "portfolios_v2"
             ADD CONSTRAINT "FK_portfolios_v2_user_id"
             FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION
         `);
 
-        await queryRunner.query(`
+    await queryRunner.query(`
             ALTER TABLE "holdings"
             ADD CONSTRAINT "FK_holdings_portfolio_id"
             FOREIGN KEY ("portfolio_id") REFERENCES "portfolios_v2"("id") ON DELETE CASCADE ON UPDATE NO ACTION
         `);
 
-        await queryRunner.query(`
+    await queryRunner.query(`
             ALTER TABLE "portfolio_transactions_v2"
             ADD CONSTRAINT "FK_portfolio_transactions_v2_portfolio_id"
             FOREIGN KEY ("portfolio_id") REFERENCES "portfolios_v2"("id") ON DELETE CASCADE ON UPDATE NO ACTION
         `);
 
-        await queryRunner.query(`
+    await queryRunner.query(`
             ALTER TABLE "portfolio_snapshots_v2"
             ADD CONSTRAINT "FK_portfolio_snapshots_v2_portfolio_id"
             FOREIGN KEY ("portfolio_id") REFERENCES "portfolios_v2"("id") ON DELETE CASCADE ON UPDATE NO ACTION
         `);
+  }
 
-    }
-
-    public async down(queryRunner: QueryRunner): Promise<void> {
-        // Drop tables in reverse order (due to foreign key constraints)
-        await queryRunner.query(`DROP TABLE "portfolio_snapshots_v2"`);
-        await queryRunner.query(`DROP TABLE "portfolio_transactions_v2"`);
-        await queryRunner.query(`DROP TABLE "holdings"`);
-        await queryRunner.query(`DROP TABLE "portfolios_v2"`);
-    }
+  public async down(queryRunner: QueryRunner): Promise<void> {
+    // Drop tables in reverse order (due to foreign key constraints)
+    await queryRunner.query(`DROP TABLE "portfolio_snapshots_v2"`);
+    await queryRunner.query(`DROP TABLE "portfolio_transactions_v2"`);
+    await queryRunner.query(`DROP TABLE "holdings"`);
+    await queryRunner.query(`DROP TABLE "portfolios_v2"`);
+  }
 }
-

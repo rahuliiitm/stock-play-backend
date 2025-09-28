@@ -23,9 +23,7 @@ describe('Simple E2E Tests', () => {
 
   describe('Health Check', () => {
     it('should return Hello World!', async () => {
-      const response = await request(app.getHttpServer())
-        .get('/')
-        .expect(200);
+      const response = await request(app.getHttpServer()).get('/').expect(200);
 
       expect(response.text).toBe('Hello World!');
     });
@@ -41,7 +39,11 @@ describe('Simple E2E Tests', () => {
     });
 
     it('should have technical indicators available', () => {
-      const { rsi, sma, macd } = require('../src/lib/market-data-sdk/indicators');
+      const {
+        rsi,
+        sma,
+        macd,
+      } = require('../src/lib/market-data-sdk/indicators');
       expect(rsi).toBeDefined();
       expect(sma).toBeDefined();
       expect(macd).toBeDefined();
@@ -50,14 +52,18 @@ describe('Simple E2E Tests', () => {
 
   describe('Portfolio Value Update Service', () => {
     it('should have portfolio value update service available', () => {
-      const { PortfolioValueUpdateService } = require('../src/modules/portfolio/portfolio-value-update.service');
+      const {
+        PortfolioValueUpdateService,
+      } = require('../src/modules/portfolio/portfolio-value-update.service');
       expect(PortfolioValueUpdateService).toBeDefined();
     });
   });
 
   describe('Scheduled Jobs', () => {
     it('should have leaderboard refresh service available', () => {
-      const { LeaderboardRefreshService } = require('../src/modules/tasks/leaderboard-refresh.service');
+      const {
+        LeaderboardRefreshService,
+      } = require('../src/modules/tasks/leaderboard-refresh.service');
       expect(LeaderboardRefreshService).toBeDefined();
     });
   });

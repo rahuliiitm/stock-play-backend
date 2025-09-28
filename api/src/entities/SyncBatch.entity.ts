@@ -1,8 +1,17 @@
-import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
-import { BrokerAccount } from './BrokerAccount.entity'
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+import { BrokerAccount } from './BrokerAccount.entity';
 
-export type SyncType = 'DAILY_PORTFOLIO' | 'ORDER_HISTORY' | 'REALTIME_UPDATE'
-export type SyncStatus = 'STARTED' | 'COMPLETED' | 'FAILED' | 'PARTIAL'
+export type SyncType = 'DAILY_PORTFOLIO' | 'ORDER_HISTORY' | 'REALTIME_UPDATE';
+export type SyncStatus = 'STARTED' | 'COMPLETED' | 'FAILED' | 'PARTIAL';
 
 @Entity('sync_batches')
 @Index(['broker_account_id'])
@@ -10,54 +19,54 @@ export type SyncStatus = 'STARTED' | 'COMPLETED' | 'FAILED' | 'PARTIAL'
 @Index(['status'])
 export class SyncBatch {
   @PrimaryGeneratedColumn('uuid')
-  id!: string
+  id!: string;
 
   @Column({ type: 'uuid' })
-  broker_account_id!: string
+  broker_account_id!: string;
 
   @Column({ type: 'varchar', length: 50 })
-  sync_type!: SyncType
+  sync_type!: SyncType;
 
   @Column({ type: 'varchar', length: 20 })
-  status!: SyncStatus
+  status!: SyncStatus;
 
   @CreateDateColumn({ type: 'timestamptz' })
-  started_at!: Date
+  started_at!: Date;
 
   @Column({ type: 'timestamptz', nullable: true })
-  completed_at?: Date
+  completed_at?: Date;
 
   @Column({ type: 'integer', default: 0 })
-  holdings_fetched!: number
+  holdings_fetched!: number;
 
   @Column({ type: 'integer', default: 0 })
-  positions_fetched!: number
+  positions_fetched!: number;
 
   @Column({ type: 'integer', default: 0 })
-  orders_fetched!: number
+  orders_fetched!: number;
 
   @Column({ type: 'integer', default: 0 })
-  holdings_updated!: number
+  holdings_updated!: number;
 
   @Column({ type: 'integer', default: 0 })
-  positions_updated!: number
+  positions_updated!: number;
 
   @Column({ type: 'integer', default: 0 })
-  orders_created!: number
+  orders_created!: number;
 
   @Column({ type: 'integer', default: 0 })
-  quantity_changes_detected!: number
+  quantity_changes_detected!: number;
 
   @Column({ type: 'integer', default: 0 })
-  errors_count!: number
+  errors_count!: number;
 
   @Column({ type: 'jsonb', nullable: true })
-  error_details?: any
+  error_details?: any;
 
   @Column({ type: 'jsonb', nullable: true })
-  metadata?: any
+  metadata?: any;
 
   @ManyToOne(() => BrokerAccount, (ba) => ba.sync_batches)
   @JoinColumn({ name: 'broker_account_id' })
-  broker_account!: BrokerAccount
+  broker_account!: BrokerAccount;
 }

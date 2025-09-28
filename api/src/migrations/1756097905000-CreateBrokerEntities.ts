@@ -1,11 +1,11 @@
-import { MigrationInterface, QueryRunner } from "typeorm";
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreateBrokerEntities1756097905000 implements MigrationInterface {
-    name = 'CreateBrokerEntities1756097905000'
+  name = 'CreateBrokerEntities1756097905000';
 
-    public async up(queryRunner: QueryRunner): Promise<void> {
-        // Create broker_accounts table
-        await queryRunner.query(`
+  public async up(queryRunner: QueryRunner): Promise<void> {
+    // Create broker_accounts table
+    await queryRunner.query(`
             CREATE TABLE "broker_accounts" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "user_id" uuid NOT NULL,
@@ -22,13 +22,13 @@ export class CreateBrokerEntities1756097905000 implements MigrationInterface {
             )
         `);
 
-        // Create unique index on user_id, broker
-        await queryRunner.query(`
+    // Create unique index on user_id, broker
+    await queryRunner.query(`
             CREATE UNIQUE INDEX "IDX_broker_accounts_user_broker" ON "broker_accounts" ("user_id", "broker")
         `);
 
-        // Create broker_tokens table
-        await queryRunner.query(`
+    // Create broker_tokens table
+    await queryRunner.query(`
             CREATE TABLE "broker_tokens" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "broker_account_id" uuid NOT NULL,
@@ -42,29 +42,28 @@ export class CreateBrokerEntities1756097905000 implements MigrationInterface {
             )
         `);
 
-        // Create unique index on broker_account_id, token_type
-        await queryRunner.query(`
+    // Create unique index on broker_account_id, token_type
+    await queryRunner.query(`
             CREATE UNIQUE INDEX "IDX_broker_tokens_account_type" ON "broker_tokens" ("broker_account_id", "token_type")
         `);
 
-        // Add foreign key constraints
-        await queryRunner.query(`
+    // Add foreign key constraints
+    await queryRunner.query(`
             ALTER TABLE "broker_accounts"
             ADD CONSTRAINT "FK_broker_accounts_user_id"
             FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION
         `);
 
-        await queryRunner.query(`
+    await queryRunner.query(`
             ALTER TABLE "broker_tokens"
             ADD CONSTRAINT "FK_broker_tokens_broker_account_id"
             FOREIGN KEY ("broker_account_id") REFERENCES "broker_accounts"("id") ON DELETE CASCADE ON UPDATE NO ACTION
         `);
-    }
+  }
 
-    public async down(queryRunner: QueryRunner): Promise<void> {
-        // Drop tables in reverse order (due to foreign key constraints)
-        await queryRunner.query(`DROP TABLE "broker_tokens"`);
-        await queryRunner.query(`DROP TABLE "broker_accounts"`);
-    }
+  public async down(queryRunner: QueryRunner): Promise<void> {
+    // Drop tables in reverse order (due to foreign key constraints)
+    await queryRunner.query(`DROP TABLE "broker_tokens"`);
+    await queryRunner.query(`DROP TABLE "broker_accounts"`);
+  }
 }
-

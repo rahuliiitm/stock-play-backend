@@ -87,9 +87,7 @@ describe('Portfolio Basic Functionality (e2e)', () => {
 
   describe('Health Check', () => {
     it('should return Hello World!', async () => {
-      const response = await request(app.getHttpServer())
-        .get('/')
-        .expect(200);
+      const response = await request(app.getHttpServer()).get('/').expect(200);
 
       expect(response.text).toBe('Hello World!');
     });
@@ -97,9 +95,7 @@ describe('Portfolio Basic Functionality (e2e)', () => {
 
   describe('Authentication', () => {
     it('should reject unauthorized portfolio access', async () => {
-      await request(app.getHttpServer())
-        .get('/v2/portfolios')
-        .expect(401);
+      await request(app.getHttpServer()).get('/v2/portfolios').expect(401);
     });
 
     it('should reject unauthorized portfolio creation', async () => {
@@ -107,7 +103,7 @@ describe('Portfolio Basic Functionality (e2e)', () => {
         .post('/v2/portfolios')
         .send({
           name: 'Test Portfolio',
-          visibility: 'private'
+          visibility: 'private',
         })
         .expect(401);
     });

@@ -1,0 +1,111 @@
+{
+  "fullDataset": {
+    "name": "Full Dataset Test",
+    "symbol": "NIFTY",
+    "timeframe": "15m",
+    "startDate": "2024-10-01T00:00:00.000Z",
+    "endDate": "2025-07-25T23:59:59.000Z",
+    "initialBalance": 100000,
+    "strategyConfig": {
+      "id": "full-dataset",
+      "name": "Full Dataset EMA-Gap-ATR",
+      "symbol": "NIFTY",
+      "timeframe": "15m",
+      "emaFastPeriod": 9,
+      "emaSlowPeriod": 21,
+      "atrPeriod": 14,
+      "atrMultiplierEntry": 0.6,
+      "atrMultiplierUnwind": 0.3,
+      "strongCandleThreshold": 0.1,
+      "gapUpDownThreshold": 0.3,
+      "rsiPeriod": 14,
+      "rsiEntryLong": 48,
+      "rsiEntryShort": 52,
+      "rsiExitLong": 45,
+      "rsiExitShort": 55,
+      "slopeLookback": 3,
+      "capital": 100000,
+      "maxLossPct": 0.05,
+      "positionSize": 1,
+      "maxLots": 5,
+      "pyramidingEnabled": true,
+      "exitMode": "FIFO",
+      "misExitTime": "15:15",
+      "cncExitTime": "15:15"
+    }
+  },
+  "monthlyTests": [
+    {
+      "name": "October 2024",
+      "startDate": "2024-10-01T00:00:00.000Z",
+      "endDate": "2024-10-31T23:59:59.000Z"
+    },
+    {
+      "name": "November 2024",
+      "startDate": "2024-11-01T00:00:00.000Z",
+      "endDate": "2024-11-30T23:59:59.000Z"
+    },
+    {
+      "name": "December 2024",
+      "startDate": "2024-12-01T00:00:00.000Z",
+      "endDate": "2024-12-31T23:59:59.000Z"
+    },
+    {
+      "name": "January 2025",
+      "startDate": "2025-01-01T00:00:00.000Z",
+      "endDate": "2025-01-31T23:59:59.000Z"
+    },
+    {
+      "name": "February 2025",
+      "startDate": "2025-02-01T00:00:00.000Z",
+      "endDate": "2025-02-28T23:59:59.000Z"
+    },
+    {
+      "name": "March 2025",
+      "startDate": "2025-03-01T00:00:00.000Z",
+      "endDate": "2025-03-31T23:59:59.000Z"
+    },
+    {
+      "name": "April 2025",
+      "startDate": "2025-04-01T00:00:00.000Z",
+      "endDate": "2025-04-30T23:59:59.000Z"
+    },
+    {
+      "name": "May 2025",
+      "startDate": "2025-05-01T00:00:00.000Z",
+      "endDate": "2025-05-31T23:59:59.000Z"
+    },
+    {
+      "name": "June 2025",
+      "startDate": "2025-06-01T00:00:00.000Z",
+      "endDate": "2025-06-30T23:59:59.000Z"
+    },
+    {
+      "name": "July 2025",
+      "startDate": "2025-07-01T00:00:00.000Z",
+      "endDate": "2025-07-25T23:59:59.000Z"
+    }
+  ],
+  "quarterlyTests": [
+    {
+      "name": "Q4 2024",
+      "startDate": "2024-10-01T00:00:00.000Z",
+      "endDate": "2024-12-31T23:59:59.000Z"
+    },
+    {
+      "name": "Q1 2025",
+      "startDate": "2025-01-01T00:00:00.000Z",
+      "endDate": "2025-03-31T23:59:59.000Z"
+    },
+    {
+      "name": "Q2 2025",
+      "startDate": "2025-04-01T00:00:00.000Z",
+      "endDate": "2025-06-30T23:59:59.000Z"
+    },
+    {
+      "name": "Q3 2025 (Partial)",
+      "startDate": "2025-07-01T00:00:00.000Z",
+      "endDate": "2025-07-25T23:59:59.000Z"
+    }
+  ]
+}
