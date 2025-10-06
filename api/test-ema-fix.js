@@ -1,118 +1,87 @@
-const axios = require('axios');
+const { NestFactory } = require('@nestjs/core');
+const { AppModule } = require('./dist/src/app.module');
 
-/**
- * Test EMA fix with comprehensive backtest
- */
 async function testEMAFix() {
-  console.log('🧪 Testing EMA fix with comprehensive backtest...');
+  console.log('🧪 Testing EMA Fix...\n');
   
-  const baseUrl = 'http://localhost:20001';
-  
-  // Test configuration with reasonable parameters
-  const config = {
-    symbol: 'NIFTY',
-    timeframe: '15m',
-    startDate: new Date('2024-01-01T00:00:00.000Z'),
-    endDate: new Date('2024-06-30T23:59:59.000Z'),
-    initialBalance: 100000,
-    strategyConfig: {
-      id: 'ema-fix-test',
-      name: 'EMA Fix Test',
+  try {
+    const app = await NestFactory.createApplicationContext(AppModule);
+    const csvDataProvider = app.get('CsvDataProvider');
+    const advancedATRStrategy = app.get('AdvancedATRStrategyService');
+    
+    // Load a small sample of data
+    console.log('📊 Loading sample NIFTY data...');
+    const candles = await csvDataProvider.getHistoricalCandles('NIFTY', '15m', '2015-01-01T00:00:00.000Z', '2015-01-31T23:59:59.000Z');
+    console.log(`✅ Loaded ${candles.length} candles\n`);
+    
+    if (candles.length < 50) {
+      console.log('❌ Insufficient data for testing');
+      return;
+    }
+    
+    // Test with different amounts of data
+    const testConfig = {
+      id: 'test-ema-fix',
+      name: 'Test EMA Fix',
       symbol: 'NIFTY',
       timeframe: '15m',
       emaFastPeriod: 9,
       emaSlowPeriod: 21,
       atrPeriod: 14,
-      atrMultiplierEntry: 0.1,        // More reasonable threshold
-      atrMultiplierUnwind: 0.3,
-      strongCandleThreshold: 0.1,      // More reasonable threshold
-      gapUpDownThreshold: 0.1,         // More reasonable threshold
+      atrDeclineThreshold: 0.08,
+      atrExpansionThreshold: 0.002,
+      atrRequiredForEntry: false,
+      strongCandleThreshold: 0.01,
+      gapUpDownThreshold: 0.01,
       rsiPeriod: 14,
-      rsiEntryLong: 50,                // More reasonable RSI
-      rsiEntryShort: 50,              // More reasonable RSI
-      rsiExitLong: 45,
-      rsiExitShort: 55,
+      rsiEntryLong: 30,
+      rsiEntryShort: 70,
+      rsiExitLong: 35,
+      rsiExitShort: 65,
       slopeLookback: 3,
       capital: 100000,
       maxLossPct: 0.05,
       positionSize: 1,
-      maxLots: 5,
+      maxLots: 12,
       pyramidingEnabled: true,
-      exitMode: 'FIFO',
-      misExitTime: '15:15',
-      cncExitTime: '15:15'
-    }
-  };
-  
-  try {
-    console.log('📤 Running EMA fix test...');
-    const startTime = Date.now();
+      exitMode: 'LIFO',
+      misExitTime: null,
+      cncExitTime: null,
+      maxConsecutiveLosses: 3,
+      maxDrawdownStop: 0.1,
+      positionSizingMode: 'CONSERVATIVE'
+    };
     
-    const response = await axios.post(`${baseUrl}/backtest/run`, config, {
-      timeout: 120000
-    });
+    // Test with different amounts of data
+    const testSizes = [10, 20, 30, 50];
     
-    const endTime = Date.now();
-    const duration = (endTime - startTime) / 1000;
-    
-    console.log(`✅ Test completed in ${duration.toFixed(2)}s`);
-    
-    // Display results
-    console.log('\n' + '='.repeat(80));
-    console.log('📊 EMA FIX TEST RESULTS');
-    console.log('='.repeat(80));
-    
-    console.log(`\n💰 PERFORMANCE METRICS:`);
-    console.log(`   📈 Total Trades: ${response.data.totalTrades || 0}`);
-    console.log(`   💵 Total Return: ${response.data.totalReturnPercentage || 0}%`);
-    console.log(`   💰 Final Balance: ₹${(response.data.finalBalance || 0).toLocaleString()}`);
-    console.log(`   🎯 Win Rate: ${response.data.winRate || 0}%`);
-    console.log(`   📉 Max Drawdown: ${response.data.maxDrawdown || 0}%`);
-    console.log(`   📊 Sharpe Ratio: ${response.data.sharpeRatio || 0}`);
-    
-    // Trade breakdown
-    console.log(`\n📊 TRADE BREAKDOWN:`);
-    console.log(`   🟢 Winning Trades: ${response.data.winningTrades || 0}`);
-    console.log(`   🔴 Losing Trades: ${response.data.losingTrades || 0}`);
-    console.log(`   📊 Average Win: ${response.data.avgWin || 0}%`);
-    console.log(`   📊 Average Loss: ${response.data.avgLoss || 0}%`);
-    console.log(`   📊 Profit Factor: ${response.data.profitFactor || 0}`);
-    
-    // Analysis
-    console.log(`\n🔍 ANALYSIS:`);
-    if (response.data.totalTrades > 0) {
-      console.log(`   ✅ EMA calculation is working - trades are being generated`);
-      console.log(`   📊 Strategy is functional with ${response.data.totalTrades} trades`);
+    for (const size of testSizes) {
+      console.log(`\n🧪 Testing with ${size} candles:`);
+      const testCandles = candles.slice(0, size);
+      const evaluation = advancedATRStrategy.evaluate(testConfig, testCandles);
       
-      if (response.data.totalReturnPercentage > 0) {
-        console.log(`   📈 Positive returns: ${response.data.totalReturnPercentage}%`);
-      } else {
-        console.log(`   📉 Negative returns: ${response.data.totalReturnPercentage}%`);
-      }
+      console.log(`   📊 Signals: ${evaluation.signals.length}`);
+      console.log(`   📊 CrossedUp: ${evaluation.diagnostics.crossedUp}`);
+      console.log(`   📊 CrossedDown: ${evaluation.diagnostics.crossedDown}`);
+      console.log(`   📊 Fast EMA: ${evaluation.diagnostics.fast?.toFixed(2)}`);
+      console.log(`   📊 Slow EMA: ${evaluation.diagnostics.slow?.toFixed(2)}`);
+      console.log(`   📊 Fast Prev: ${evaluation.diagnostics.fastPrev?.toFixed(2)}`);
+      console.log(`   📊 Slow Prev: ${evaluation.diagnostics.slowPrev?.toFixed(2)}`);
       
-      if (response.data.winRate > 40) {
-        console.log(`   🎯 Good win rate: ${response.data.winRate}%`);
-      } else {
-        console.log(`   ⚠️  Low win rate: ${response.data.winRate}%`);
+      if (evaluation.diagnostics.reason) {
+        console.log(`   ❌ Reason: ${evaluation.diagnostics.reason}`);
+        if (evaluation.diagnostics.fastLength) {
+          console.log(`   📊 Fast Length: ${evaluation.diagnostics.fastLength}`);
+          console.log(`   📊 Slow Length: ${evaluation.diagnostics.slowLength}`);
+        }
       }
-    } else {
-      console.log(`   ⚠️  No trades generated - parameters may need adjustment`);
     }
     
-    console.log('\n🎉 EMA fix test completed!');
-    
-    return response.data;
+    await app.close();
     
   } catch (error) {
-    console.error(`❌ Test failed:`, error.message);
-    if (error.response) {
-      console.error('Response data:', error.response.data);
-    }
-    throw error;
+    console.error('❌ Error:', error.message);
   }
 }
 
-// Run the test
-testEMAFix().catch(error => {
-  console.error('❌ EMA fix test failed:', error);
-});
+testEMAFix().catch(console.error);

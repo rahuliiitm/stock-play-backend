@@ -2,6 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { EMA, ATR, RSI, ADX } from 'technicalindicators';
 import { StrategySignal } from './strategy-building-blocks.service';
 import { CandleQueryResult } from '../../trading/services/candle-query.service';
+import { TrailingStopService } from '../components/trailing-stop.service';
+import { TrailingStopConfig, ActiveTrade } from '../components/trailing-stop.interface';
 
 export interface AdvancedATRConfig {
   id: string;
@@ -17,6 +19,7 @@ export interface AdvancedATRConfig {
   atrPeriod: number;
   atrDeclineThreshold: number;        // ATR decline percentage for FIFO exits
   atrExpansionThreshold: number;      // ATR expansion percentage for pyramiding
+  atrRequiredForEntry?: boolean;      // Whether ATR expansion is required for initial entries (default: false)
 
   // Strong Candle Filter
   strongCandleThreshold: number;
@@ -45,6 +48,17 @@ export interface AdvancedATRConfig {
 
   // Exit Mode
   exitMode: 'FIFO' | 'LIFO';
+  
+  // Supertrend Parameters
+  supertrendPeriod?: number;
+  supertrendMultiplier?: number;
+
+  // Trailing Stop Loss
+  trailingStopEnabled: boolean;
+  trailingStopType: 'ATR' | 'PERCENTAGE';
+  trailingStopATRMultiplier: number;      // ATR multiplier for trailing stop (e.g., 2.0 = 2x ATR)
+  trailingStopPercentage: number;          // Percentage trailing stop (e.g., 0.02 = 2%)
+  trailingStopActivationProfit: number;    // Minimum profit % to activate trailing stop (e.g., 0.01 = 1%)
 
   // Time-based Exits
   misExitTime: string;
@@ -71,6 +85,8 @@ export interface StrategyEvaluation {
 @Injectable()
 export class AdvancedATRStrategyService {
   private readonly logger = new Logger(AdvancedATRStrategyService.name);
+
+  constructor(private readonly trailingStopService: TrailingStopService) {}
   
   // Track ATR values for pyramiding and FIFO logic
   private trackedATR: number = 0;
@@ -134,18 +150,27 @@ export class AdvancedATRStrategyService {
       !slowSeries.length ||
       !atrSeries.length ||
       !rsiSeries.length ||
-      !adxSeries.length
+      !adxSeries.length ||
+      fastSeries.length < 2 ||
+      slowSeries.length < 2
     ) {
       return {
         signals: [],
-        diagnostics: { reason: 'indicator_calculation_failed' },
+        diagnostics: { 
+          reason: 'indicator_calculation_failed',
+          fastLength: fastSeries.length,
+          slowLength: slowSeries.length,
+          atrLength: atrSeries.length,
+          rsiLength: rsiSeries.length,
+          adxLength: adxSeries.length
+        },
       };
     }
 
     const fast = fastSeries[fastSeries.length - 1];
-    const fastPrev = fastSeries[fastSeries.length - 2] ?? fast;
+    const fastPrev = fastSeries.length >= 2 ? fastSeries[fastSeries.length - 2] : fast;
     const slow = slowSeries[slowSeries.length - 1];
-    const slowPrev = slowSeries[slowSeries.length - 2] ?? slow;
+    const slowPrev = slowSeries.length >= 2 ? slowSeries[slowSeries.length - 2] : slow;
     const atr = atrSeries[atrSeries.length - 1];
     const rsi = rsiSeries[rsiSeries.length - 1];
     const latestAdx = adxSeries[adxSeries.length - 1];
@@ -177,22 +202,46 @@ export class AdvancedATRStrategyService {
     const candleTime = new Date(latestCandle.timestamp);
     const isMarketOpenCandle = candleTime.getUTCHours() === 3 && candleTime.getUTCMinutes() === 45;
 
-    // EMA crossover detection
-    const crossedUp = fastPrev <= slowPrev && fast > slow;
-    const crossedDown = fastPrev >= slowPrev && fast < slow;
+    // Supertrend calculation (ATR-based trend following)
+    const supertrendPeriod = config.supertrendPeriod || 10;
+    const supertrendMultiplier = config.supertrendMultiplier || 2.0; // Use 2.0 as default for Supertrend(10, 2)
+    const supertrend = currentATR * supertrendMultiplier;
+    
+    // Calculate Supertrend bands
+    const hl2 = (latestCandle.high + latestCandle.low) / 2;
+    const upperBand = hl2 + supertrend;
+    const lowerBand = hl2 - supertrend;
+    
+    // Simplified Supertrend implementation
+    // Use price position relative to bands to determine trend
+    // If price is above the middle (hl2), it's bullish
+    // If price is below the middle (hl2), it's bearish
+    const isBullishTrend = latestCandle.close > hl2;
+    const isBearishTrend = latestCandle.close < hl2;
+    
+    // Previous candle for trend change detection
+    const prevHl2 = prevCandle ? (prevCandle.high + prevCandle.low) / 2 : hl2;
+    const prevIsBullishTrend = prevCandle ? prevCandle.close > prevHl2 : false;
+    const prevIsBearishTrend = prevCandle ? prevCandle.close < prevHl2 : false;
+    
+    // Supertrend crossover detection
+    const crossedUp = !prevIsBullishTrend && isBullishTrend;
+    const crossedDown = !prevIsBearishTrend && isBearishTrend;
+    
+    // Debug logging for Supertrend
+    this.logger.debug(`Supertrend Debug: Close=${latestCandle.close.toFixed(2)}, HL2=${hl2.toFixed(2)}, Upper=${upperBand.toFixed(2)}, Lower=${lowerBand.toFixed(2)}, Bullish=${isBullishTrend}, Bearish=${isBearishTrend}, CrossedUp=${crossedUp}, CrossedDown=${crossedDown}`);
 
-    // Trend direction
-    const isBullishTrend = fast > slow;
-    const isBearishTrend = fast < slow;
-
-    // RSI conditions
-    const rsiEntryLong = rsi > config.rsiEntryLong;
-    const rsiEntryShort = rsi < config.rsiEntryShort;
-    const rsiExitLong = rsi < config.rsiExitLong;
-    const rsiExitShort = rsi > config.rsiExitShort;
+    // RSI conditions - only apply if RSI thresholds are set (not 0)
+    const rsiEntryLong = config.rsiEntryLong > 0 ? rsi > config.rsiEntryLong : true;
+    const rsiEntryShort = config.rsiEntryShort > 0 ? rsi < config.rsiEntryShort : true;
+    const rsiExitLong = config.rsiExitLong > 0 ? rsi < config.rsiExitLong : false;
+    const rsiExitShort = config.rsiExitShort > 0 ? rsi > config.rsiExitShort : false;
 
     // Advanced ATR Logic Implementation
     const signals: StrategySignal[] = [];
+    
+    // Priority: Exit signals take precedence over entry signals to prevent simultaneous signals
+    let hasExitSignal = false;
 
     // Initialize tracked ATR if not set
     if (this.trackedATR === 0) {
@@ -214,37 +263,46 @@ export class AdvancedATRStrategyService {
       this.lastATRUpdate = new Date(latestCandle.timestamp);
     }
 
-    // Entry Logic
-    if (crossedUp && rsiEntryLong && atrExpanding) {
+    // Entry Logic - ATR requirement is now configurable
+    const atrRequiredForEntry = config.atrRequiredForEntry ?? false; // Default to false for backward compatibility
+    
+    // Initial Entry Logic using Supertrend - Only if no exit signal
+    if (!hasExitSignal && crossedUp && rsiEntryLong && (!atrRequiredForEntry || atrExpanding)) {
       signals.push(this.buildEntrySignal('LONG', config, latestCandle, {
-        fast,
-        slow,
+        supertrend: supertrend,
+        upperBand: upperBand,
+        lowerBand: lowerBand,
         atr: currentATR,
         rsi,
-        atrExpanding,
+        atrExpanding: atrRequiredForEntry ? atrExpanding : true, // Always true if ATR not required
         trackedATR: this.trackedATR,
-        atrExpansionThreshold
+        atrExpansionThreshold,
+        atrRequiredForEntry
       }));
     }
 
-    if (crossedDown && rsiEntryShort && atrExpanding) {
+    if (!hasExitSignal && crossedDown && rsiEntryShort && (!atrRequiredForEntry || atrExpanding)) {
       signals.push(this.buildEntrySignal('SHORT', config, latestCandle, {
-        fast,
-        slow,
+        supertrend: supertrend,
+        upperBand: upperBand,
+        lowerBand: lowerBand,
         atr: currentATR,
         rsi,
-        atrExpanding,
+        atrExpanding: atrRequiredForEntry ? atrExpanding : true, // Always true if ATR not required
         trackedATR: this.trackedATR,
-        atrExpansionThreshold
+        atrExpansionThreshold,
+        atrRequiredForEntry
       }));
     }
 
-    // Pyramiding Logic (Add positions on ATR expansion)
-    if (atrExpanding && config.pyramidingEnabled) {
+    // Pyramiding Logic (Add positions on ATR expansion) - Only if no exit signal
+    // Disabled for cleaner Supertrend + RSI strategy
+    if (!hasExitSignal && atrExpanding && config.pyramidingEnabled && false) { // Disabled pyramiding
       if (isBullishTrend && rsiEntryLong) {
         signals.push(this.buildPyramidingSignal('LONG', config, latestCandle, {
-          fast,
-          slow,
+          supertrend: supertrend,
+          upperBand: upperBand,
+          lowerBand: lowerBand,
           atr: currentATR,
           rsi,
           atrExpanding,
@@ -252,11 +310,12 @@ export class AdvancedATRStrategyService {
           atrExpansionThreshold
         }));
       }
-      
+
       if (isBearishTrend && rsiEntryShort) {
         signals.push(this.buildPyramidingSignal('SHORT', config, latestCandle, {
-          fast,
-          slow,
+          supertrend: supertrend,
+          upperBand: upperBand,
+          lowerBand: lowerBand,
           atr: currentATR,
           rsi,
           atrExpanding,
@@ -270,26 +329,30 @@ export class AdvancedATRStrategyService {
     if (atrDeclining) {
       if (isBullishTrend) {
         signals.push(this.buildFIFOExitSignal('LONG', config, latestCandle, {
-          fast,
-          slow,
+          supertrend: supertrend,
+          upperBand: upperBand,
+          lowerBand: lowerBand,
           atr: currentATR,
           rsi,
           atrDeclining,
           trackedATR: this.trackedATR,
           atrDeclineThreshold
         }));
+        hasExitSignal = true;
       }
       
       if (isBearishTrend) {
         signals.push(this.buildFIFOExitSignal('SHORT', config, latestCandle, {
-          fast,
-          slow,
+          supertrend: supertrend,
+          upperBand: upperBand,
+          lowerBand: lowerBand,
           atr: currentATR,
           rsi,
           atrDeclining,
           trackedATR: this.trackedATR,
           atrDeclineThreshold
         }));
+        hasExitSignal = true;
       }
     }
 
@@ -300,6 +363,7 @@ export class AdvancedATRStrategyService {
         rsi,
         rsiExitLong
       }));
+      hasExitSignal = true;
     }
 
     if (rsiExitShort && isBearishTrend) {
@@ -308,7 +372,11 @@ export class AdvancedATRStrategyService {
         rsi,
         rsiExitShort
       }));
+      hasExitSignal = true;
     }
+
+    // Note: Trailing stop logic is now handled by the TrailingStopService component
+    // This will be integrated at the backtest orchestrator level for better separation of concerns
 
     if (crossedDown && isBullishTrend) {
       signals.push(this.buildEmergencyExitSignal('LONG', config, latestCandle, {
@@ -462,6 +530,30 @@ export class AdvancedATRStrategyService {
         diagnostics: {
           ...diagnostics,
           signalType: 'EMERGENCY_EXIT'
+        }
+      }
+    };
+  }
+
+  private buildTrailingStopSignal(
+    direction: 'LONG' | 'SHORT',
+    config: AdvancedATRConfig,
+    candle: CandleQueryResult,
+    diagnostics: any
+  ): StrategySignal {
+    return {
+      type: 'EXIT',
+      strength: 90,
+      confidence: 85,
+      timestamp: new Date(candle.timestamp),
+      data: {
+        direction,
+        price: candle.close,
+        symbol: config.symbol,
+        timeframe: config.timeframe,
+        diagnostics: {
+          ...diagnostics,
+          signalType: 'TRAILING_STOP'
         }
       }
     };

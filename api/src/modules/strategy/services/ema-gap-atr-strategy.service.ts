@@ -50,6 +50,14 @@ export interface EmaGapAtrConfig {
   // Exit Mode
   exitMode: 'FIFO' | 'LIFO';
 
+  // Trailing Stop Loss
+  trailingStopEnabled?: boolean;
+  trailingStopType?: 'ATR' | 'PERCENTAGE';
+  trailingStopATRMultiplier?: number;      // ATR multiplier for trailing stop (e.g., 2.0 = 2x ATR)
+  trailingStopPercentage?: number;          // Percentage trailing stop (e.g., 0.02 = 2%)
+  trailingStopActivationProfit?: number;    // Minimum profit % to activate trailing stop (e.g., 0.01 = 1%)
+  maxTrailDistance?: number;                // Maximum trailing distance (e.g., 0.05 = 5%)
+
   // Time-based Exits
   misExitTime: string;
   cncExitTime: string;

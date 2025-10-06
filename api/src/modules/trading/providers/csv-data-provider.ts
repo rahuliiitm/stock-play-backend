@@ -87,7 +87,7 @@ export class CsvDataProvider implements MarketDataProvider {
       this.logger.log(`Data directory: ${this.dataDirectory}`);
       const filePath = path.join(
         this.dataDirectory,
-        `${symbol}_${timeframe}.csv`,
+        `${symbol}_10year_${timeframe}.csv`,
       );
       console.log(`File path: ${filePath}`);
       console.log(`File exists: ${fs.existsSync(filePath)}`);
@@ -112,7 +112,7 @@ export class CsvDataProvider implements MarketDataProvider {
             if (row.timestamp) {
               // If timestamp is a number (Unix timestamp in ms)
               const timestampNum = parseFloat(row.timestamp);
-              if (!isNaN(timestampNum)) {
+              if (!isNaN(timestampNum) && timestampNum > 1000000000000) { // Valid Unix timestamp in ms
                 timestamp = timestampNum;
               } else {
                 // If timestamp is a date string
@@ -351,7 +351,7 @@ export class CsvDataProvider implements MarketDataProvider {
       this.logger.log('Preparing NIFTY data for backtesting...');
 
       const rawFilePath = path.join(this.dataDirectory, 'NIFTY_1m_raw.csv');
-      const processedFilePath = path.join(this.dataDirectory, 'NIFTY_15m.csv');
+      const processedFilePath = path.join(this.dataDirectory, 'NIFTY_10year_15m.csv');
 
       if (!fs.existsSync(rawFilePath)) {
         throw new Error(`Raw NIFTY data file not found: ${rawFilePath}`);
@@ -367,22 +367,16 @@ export class CsvDataProvider implements MarketDataProvider {
 
       const rawData: RawCandleData[] = [];
 
-      // Read raw 1-minute data (filter to last 1 year)
-      const oneYearAgo = new Date();
-      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-
+      // Read raw 1-minute data (load all available data)
       await new Promise<void>((resolve, reject) => {
         fs.createReadStream(rawFilePath)
           .pipe(csv())
           .on('data', (row: RawCandleData) => {
-            const candleDate = new Date(row.date);
-            if (candleDate >= oneYearAgo) {
-              rawData.push(row);
-            }
+            rawData.push(row);
           })
           .on('end', () => {
             this.logger.log(
-              `Loaded ${rawData.length} 1-minute candles from last year`,
+              `Loaded ${rawData.length} 1-minute candles from full dataset`,
             );
             resolve();
           })

@@ -200,7 +200,7 @@ async function realCrossoverAnalysis() {
 - **Trades Taken**: ${tradesTaken}
 - **Trades Rejected**: ${tradesRejected}
 - **Success Rate**: ${((tradesTaken / totalCrossovers) * 100).toFixed(2)}%
-
+    
 ## Detailed Results
 
 | Time | EMA 9 | EMA 21 | RSI | ATR(14) | Type | Trade | Condition Failed |

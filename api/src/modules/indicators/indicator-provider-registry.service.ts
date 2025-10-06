@@ -8,9 +8,11 @@ import { SmaProvider } from './providers/sma.provider';
 import { MacdProvider } from './providers/macd.provider';
 import { BollingerBandsProvider } from './providers/bollinger-bands.provider';
 import { SupertrendProvider } from './providers/supertrend.provider';
+import { SupportResistanceProvider } from './providers/support-resistance.provider';
 import { EmaProvider } from './providers/ema.provider';
 import { AtrProvider } from './providers/atr.provider';
 import { AdxProvider } from './providers/adx.provider';
+import { DemaProvider } from './providers/dema.provider';
 
 @Injectable()
 export class IndicatorProviderRegistryService
@@ -28,6 +30,8 @@ export class IndicatorProviderRegistryService
     this.register(new EmaProvider());
     this.register(new AtrProvider());
     this.register(new AdxProvider());
+    this.register(new DemaProvider());
+    this.register(new SupportResistanceProvider());
   }
 
   register(provider: IndicatorProvider): void {

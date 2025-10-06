@@ -19,9 +19,19 @@ import { StrategyWorkerManager } from './services/strategy-worker-manager.servic
 import { StrategyBuildingBlocksService } from './services/strategy-building-blocks.service';
 import { StrategyRunnerService } from './services/strategy-runner.service';
 import { EmaGapAtrStrategyService } from './services/ema-gap-atr-strategy.service';
+import { PriceActionStrategyService } from './services/price-action-strategy.service';
 import { StrategySignalListenerService } from './services/strategy-signal-listener.service';
 import { TradingStrategyRunnerService } from './services/trading-strategy-runner.service';
 import { TradingModule } from '../trading/trading.module';
+import { IndicatorsModule } from '../indicators/indicators.module';
+
+// Multi-Symbol Strategy Framework
+import { StrategyFactory } from './factories/strategy-factory.service';
+import { MultiSymbolStrategyFactory } from './factories/multi-symbol-strategy-factory.service';
+import { MultiSymbolStrategyOrchestrator } from './orchestrators/multi-symbol-strategy-orchestrator.service';
+
+// Strategy Indicators
+import { StrategyIndicatorsService } from './indicators/strategy-indicators.service';
 
 // Controllers
 import { StrategyController } from './controllers/strategy.controller';
@@ -33,6 +43,7 @@ import { StrategyManagementController } from './controllers/strategy-management.
     ConfigModule,
     BrokerModule,
     TradingModule,
+    IndicatorsModule,
     TypeOrmModule.forFeature([
       Strategy,
       StrategyRuntimeState,
@@ -54,8 +65,15 @@ import { StrategyManagementController } from './controllers/strategy-management.
     StrategyBuildingBlocksService,
     StrategyRunnerService,
     EmaGapAtrStrategyService,
+    PriceActionStrategyService,
     StrategySignalListenerService,
     TradingStrategyRunnerService,
+    // Strategy Indicators
+    StrategyIndicatorsService,
+    // Multi-Symbol Strategy Framework
+    StrategyFactory,
+    MultiSymbolStrategyFactory,
+    MultiSymbolStrategyOrchestrator,
     {
       provide: 'REDIS_CLIENT',
       useFactory: (): Redis => {
@@ -71,6 +89,12 @@ import { StrategyManagementController } from './controllers/strategy-management.
     StrategyRecoveryService,
     StrategyWorkerManager,
     StrategyRunnerService,
+    // Strategy Indicators
+    StrategyIndicatorsService,
+    // Multi-Symbol Strategy Framework
+    StrategyFactory,
+    MultiSymbolStrategyFactory,
+    MultiSymbolStrategyOrchestrator,
     TypeOrmModule,
   ],
 })

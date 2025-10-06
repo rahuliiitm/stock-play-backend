@@ -164,3 +164,4 @@ async function analyzeMissedTrades() {
 analyzeMissedTrades().catch(error => {
   console.error('❌ Analysis failed:', error);
 });
+

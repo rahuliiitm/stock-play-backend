@@ -230,3 +230,4 @@ async function optimizeATRThresholds() {
 optimizeATRThresholds().catch(error => {
   console.error('❌ ATR threshold optimization failed:', error);
 });
+

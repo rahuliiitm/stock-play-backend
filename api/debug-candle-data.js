@@ -76,3 +76,4 @@ function debugCandleData() {
 
 // Run the debug
 debugCandleData();
+

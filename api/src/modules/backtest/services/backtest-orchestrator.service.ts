@@ -4,10 +4,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CsvDataProvider } from '../../trading/providers/csv-data-provider';
 import { MockOrderExecutionProvider } from '../../trading/providers/mock-order-execution';
-import { EmaGapAtrStrategyService } from '../../strategy/services/ema-gap-atr-strategy.service';
-import { AdvancedATRStrategyService } from '../../strategy/services/advanced-atr-strategy.service';
+import { StrategyFactory } from '../../strategy/factories/strategy-factory.service';
 import { BacktestValidationService } from './backtest-validation.service';
 import { BacktestSafetyService } from './backtest-safety.service';
+import { TrailingStopService } from '../../strategy/components/trailing-stop.service';
+import { TrailingStopConfig, ActiveTrade } from '../../strategy/components/trailing-stop.interface';
 // import { BacktestDataService } from './backtest-data.service'
 // import { BacktestMetricsService } from './backtest-metrics.service'
 import { BacktestRun } from '../entities/backtest-run.entity';
@@ -21,6 +22,8 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { BacktestDataService } from './backtest-data.service';
 import { BacktestMetricsService } from './backtest-metrics.service';
 import { EmaGapAtrConfig } from '../../strategy/services/ema-gap-atr-strategy.service';
+import { ExitStrategyFactory } from '../../strategy/strategies/exit-strategy-factory';
+import { ExitStrategy } from '../../strategy/strategies/exit-strategy.interface';
 
 /**
  * Backtest Orchestrator Service
@@ -36,12 +39,13 @@ export class BacktestOrchestratorService {
   constructor(
     private readonly dataProvider: CsvDataProvider,
     private readonly orderExecution: MockOrderExecutionProvider,
-    private readonly strategyService: EmaGapAtrStrategyService,
-    private readonly advancedATRStrategyService: AdvancedATRStrategyService,
+    private readonly strategyFactory: StrategyFactory,
     private readonly validationService: BacktestValidationService,
     private readonly safetyService: BacktestSafetyService,
     private readonly dataService: BacktestDataService,
     private readonly metricsService: BacktestMetricsService,
+    private readonly exitStrategyFactory: ExitStrategyFactory,
+    private readonly trailingStopService: TrailingStopService,
     @InjectRepository(BacktestRun)
     private readonly backtestRunRepository: Repository<BacktestRun>,
     @InjectRepository(BacktestResult)
@@ -55,6 +59,165 @@ export class BacktestOrchestratorService {
     this.logger.debug(`Data provider constructor: ${this.dataProvider?.constructor?.name}`);
     this.logger.debug(`Order execution type: ${typeof this.orderExecution}`);
     this.logger.debug(`Order execution constructor: ${this.orderExecution?.constructor?.name}`);
+  }
+
+  /**
+   * Register a strategy with the orchestrator
+   */
+  registerStrategy(name: string, strategy: any): void {
+    this.strategyFactory.register(name, strategy);
+    this.logger.debug(`Registered strategy: ${name}`);
+  }
+
+  /**
+   * Calculate warm-up period using generic indicator analysis
+   * @param config - Strategy configuration
+   * @returns Number of candles to skip for warm-up period
+   */
+  private calculateWarmupPeriod(config: any): number {
+    this.logger.debug(`Calculating generic warm-up period for strategy: ${config.name || 'Unknown'}`);
+    
+    const indicatorPeriods: number[] = [];
+    
+    // Detect all indicator periods in the configuration
+    this.detectIndicatorPeriods(config, indicatorPeriods);
+    
+    // Add buffer period for stability
+    const bufferPeriod = 10;
+    
+    // Calculate maximum period needed
+    const maxPeriod = Math.max(...indicatorPeriods, 0);
+    const warmupPeriod = maxPeriod + bufferPeriod;
+    
+    this.logger.debug(`Detected indicator periods: ${indicatorPeriods.join(', ')}`);
+    this.logger.debug(`Maximum period: ${maxPeriod}, Buffer: ${bufferPeriod}, Final warm-up: ${warmupPeriod}`);
+    
+    return warmupPeriod;
+  }
+
+  /**
+   * Recursively detect all indicator periods in a configuration object
+   * @param obj - Configuration object to analyze
+   * @param periods - Array to collect detected periods
+   */
+  private detectIndicatorPeriods(obj: any, periods: number[]): void {
+    if (obj === null || obj === undefined || typeof obj !== 'object') {
+      return;
+    }
+
+    // Handle arrays
+    if (Array.isArray(obj)) {
+      obj.forEach(item => this.detectIndicatorPeriods(item, periods));
+      return;
+    }
+
+    // Handle objects
+    for (const [key, value] of Object.entries(obj)) {
+      // Skip non-numeric values
+      if (typeof value !== 'number') {
+        this.detectIndicatorPeriods(value, periods);
+        continue;
+      }
+
+      // Detect indicator periods based on common naming patterns
+      const period = this.extractIndicatorPeriod(key, value);
+      if (period > 0) {
+        periods.push(period);
+        this.logger.debug(`Detected indicator: ${key} = ${value} (period: ${period})`);
+      }
+    }
+  }
+
+  /**
+   * Extract indicator period from a configuration key-value pair
+   * @param key - Configuration key
+   * @param value - Configuration value
+   * @returns Calculated period for the indicator
+   */
+  private extractIndicatorPeriod(key: string, value: number): number {
+    const keyLower = key.toLowerCase();
+    
+    // EMA indicators
+    if (keyLower.includes('ema') && (keyLower.includes('period') || keyLower.includes('fast') || keyLower.includes('slow'))) {
+      return value;
+    }
+    
+    // MACD indicators
+    if (keyLower.includes('macd') && (keyLower.includes('period') || keyLower.includes('fast') || keyLower.includes('slow') || keyLower.includes('signal'))) {
+      return value;
+    }
+    
+    // RSI indicators
+    if (keyLower.includes('rsi') && keyLower.includes('period')) {
+      return value;
+    }
+    
+    // ATR indicators
+    if (keyLower.includes('atr') && keyLower.includes('period')) {
+      return value;
+    }
+    
+    // Supertrend indicators
+    if (keyLower.includes('supertrend') && keyLower.includes('period')) {
+      return value;
+    }
+    
+    // Bollinger Bands
+    if (keyLower.includes('bb') && keyLower.includes('period')) {
+      return value;
+    }
+    
+    // Stochastic indicators
+    if (keyLower.includes('stoch') && keyLower.includes('period')) {
+      return value;
+    }
+    
+    // Williams %R
+    if (keyLower.includes('williams') && keyLower.includes('period')) {
+      return value;
+    }
+    
+    // CCI (Commodity Channel Index)
+    if (keyLower.includes('cci') && keyLower.includes('period')) {
+      return value;
+    }
+    
+    // ADX (Average Directional Index)
+    if (keyLower.includes('adx') && keyLower.includes('period')) {
+      return value;
+    }
+    
+    // Parabolic SAR
+    if (keyLower.includes('sar') && keyLower.includes('period')) {
+      return value;
+    }
+    
+    // Ichimoku Cloud components
+    if (keyLower.includes('ichimoku') && keyLower.includes('period')) {
+      return value;
+    }
+    
+    // Generic period indicators
+    if (keyLower.includes('period') && value > 0) {
+      return value;
+    }
+    
+    // Lookback periods
+    if (keyLower.includes('lookback') && value > 0) {
+      return value;
+    }
+    
+    // Window periods
+    if (keyLower.includes('window') && value > 0) {
+      return value;
+    }
+    
+    // Length parameters
+    if (keyLower.includes('length') && value > 0) {
+      return value;
+    }
+    
+    return 0;
   }
 
   /**
@@ -160,54 +323,79 @@ export class BacktestOrchestratorService {
     const trades: any[] = [];
     const equityCurve: any[] = [];
     const activeTrades: any[] = []; // Track active trades
-    const currentBalance = config.initialBalance;
-    let peakBalance = config.initialBalance;
+    let currentBalance = config.initialBalance || 100000;
+    let peakBalance = config.initialBalance || 100000;
     let maxDrawdown = 0;
     let currentLots = 0; // Track current position size
     const entryPrice: number = 0; // Track entry price for pyramiding
 
+    // Calculate minimum required candles for proper EMA calculation
+    const demaPeriod = (config.strategyConfig as any).demaPeriod || 0;
+    
+    // For DEMA(52), we need at least 52 candles + buffer for proper calculation
+    // Skip first year of data to ensure DEMA values are accurate
+    const demaMinCandles = demaPeriod > 0 ? demaPeriod + 20 : 0; // Extra buffer for DEMA
+    const minRequiredCandles = Math.max(
+      config.strategyConfig.emaSlowPeriod || 21,
+      config.strategyConfig.atrPeriod || 14,
+      config.strategyConfig.rsiPeriod || 14,
+      demaPeriod, // Include DEMA period
+      (config.strategyConfig as any).supertrendPeriod || 0, // Include Supertrend period
+      demaMinCandles // Ensure we have enough data for DEMA
+    );
+    
+    this.logger.debug(`Backtest execution starting with ${candles.length} candles`);
+    this.logger.debug(`Min required candles: ${minRequiredCandles}`);
+    this.logger.debug(`Loop will run from index ${minRequiredCandles - 1} to ${candles.length - 1} (${candles.length - minRequiredCandles + 1} iterations)`);
+    
     // Process each candle with safety monitoring
-    for (let i = 0; i < candles.length; i++) {
+    for (let i = minRequiredCandles - 1; i < candles.length; i++) {
       try {
+        // Always provide enough historical data for EMA calculations
+        // For DEMA(52), we need the full historical data from the beginning
         const currentCandles = candles.slice(0, i + 1);
 
         // Run strategy evaluation
+        this.logger.debug(`🔄 Processing candle ${i + 1}/${candles.length} at ${new Date(candles[i].timestamp).toISOString()}`);
         this.logger.debug(
           `Running strategy evaluation with config: ${JSON.stringify(config.strategyConfig)}`,
         );
         this.logger.debug(`Current candles length: ${currentCandles.length}`);
         this.logger.debug(`Latest candle: ${JSON.stringify(currentCandles[currentCandles.length - 1])}`);
         
+        // Use StrategyFactory to get the appropriate strategy
+        const strategyName = config.strategyName || 'ema-gap-atr';
+        this.logger.debug(`Using StrategyFactory to get strategy: ${strategyName}`);
+        
         const strategyConfig = {
           ...config.strategyConfig,
           symbol: config.symbol,
+          name: config.strategyConfig.name || strategyName,
         };
         
-        // Choose strategy service based on config
-        let evaluation;
-        if (strategyConfig.atrDeclineThreshold !== undefined || strategyConfig.atrExpansionThreshold !== undefined) {
-          // Use advanced ATR strategy for ATR-based configurations
-          this.logger.debug('Using Advanced ATR Strategy Service');
-          
-          // Convert to AdvancedATRConfig format
-          const advancedConfig = {
-            ...strategyConfig,
-            atrDeclineThreshold: strategyConfig.atrDeclineThreshold || 0.1,
-            atrExpansionThreshold: strategyConfig.atrExpansionThreshold || 0.1,
-          };
-          
-          evaluation = this.advancedATRStrategyService.evaluate(
-            advancedConfig,
-            currentCandles,
-          );
-        } else {
-          // Use standard EMA-Gap-ATR strategy
-          this.logger.debug('Using Standard EMA-Gap-ATR Strategy Service');
-          evaluation = this.strategyService.evaluate(
-            strategyConfig,
-            currentCandles,
-          );
+        const strategy = this.strategyFactory.getStrategy(strategyName);
+        
+        // Calculate warm-up period using generic calculator
+        const warmupPeriod = this.calculateWarmupPeriod(strategyConfig);
+        this.logger.debug(`Strategy warm-up period: ${warmupPeriod} candles`);
+        
+        // Skip processing if we haven't reached the warm-up period
+        if (i < warmupPeriod - 1) {
+          this.logger.debug(`⏳ Skipping candle ${i + 1} (warm-up period: ${warmupPeriod})`);
+          continue;
         }
+        
+        // Pass context with active trades to strategy
+        const context = {
+          activeTrades: activeTrades,
+          currentBalance: currentBalance,
+          currentLots: currentLots
+        };
+        
+        this.logger.debug(`Passing context to strategy: ${JSON.stringify(context)}`);
+        this.logger.debug(`Active trades count: ${activeTrades.length}`);
+        
+        const evaluation = await strategy.evaluate(strategyConfig, currentCandles, context);
         
         this.logger.debug(`Strategy evaluation result: ${JSON.stringify(evaluation, null, 2)}`);
 
@@ -220,7 +408,263 @@ export class BacktestOrchestratorService {
         
         this.logger.debug(`Strategy evaluation returned ${evaluation.signals.length} signals`);
 
+        // Process trailing stops for active trades (if enabled)
+        if (config.strategyConfig.trailingStopEnabled && activeTrades.length > 0) {
+          this.logger.debug(`Processing trailing stops for ${activeTrades.length} active trades`);
+          try {
+            // Get current ATR for trailing stop calculations
+            const atr = currentCandles.length >= 14 ? 
+              this.calculateATR(currentCandles.slice(-14)) : 1.0;
+            
+            // Process each active trade for trailing stops
+            for (let j = activeTrades.length - 1; j >= 0; j--) {
+              const trade = activeTrades[j];
+              const currentPrice = candles[i].close;
+              const currentHigh = candles[i].high;
+              const currentLow = candles[i].low;
+              
+              // Calculate current P&L percentage
+              const pnlPercentage = trade.direction === 'LONG'
+                ? ((currentPrice - trade.entryPrice) / trade.entryPrice) * 100
+                : ((trade.entryPrice - currentPrice) / trade.entryPrice) * 100;
+              
+              // Update highest/lowest prices
+              if (trade.direction === 'LONG') {
+                trade.highestPrice = Math.max(trade.highestPrice || trade.entryPrice, currentHigh);
+              } else {
+                trade.lowestPrice = Math.min(trade.lowestPrice || trade.entryPrice, currentLow);
+              }
+              
+              // Check if trailing stop should be activated
+              const activationProfit = (config.strategyConfig.trailingStopActivationProfit || 0.01) * 100;
+              this.logger.debug(`Trade P&L: ${pnlPercentage.toFixed(2)}%, Activation threshold: ${activationProfit}%, Trailing active: ${trade.isTrailingActive}`);
+              if (pnlPercentage >= activationProfit) {
+                trade.isTrailingActive = true;
+                this.logger.debug(`Trailing stop activated for ${trade.direction} ${trade.symbol} at ${currentPrice}`);
+                
+                // Calculate trailing stop price
+                let trailingStopPrice = 0;
+                if (config.strategyConfig.trailingStopType === 'ATR') {
+                  const atrMultiplier = config.strategyConfig.trailingStopATRMultiplier || 2.0;
+                  if (trade.direction === 'LONG') {
+                    trailingStopPrice = trade.highestPrice - (atr * atrMultiplier);
+                  } else {
+                    trailingStopPrice = trade.lowestPrice + (atr * atrMultiplier);
+                  }
+                } else {
+                  const percentage = config.strategyConfig.trailingStopPercentage || 0.02;
+                  if (trade.direction === 'LONG') {
+                    trailingStopPrice = trade.highestPrice * (1 - percentage);
+                  } else {
+                    trailingStopPrice = trade.lowestPrice * (1 + percentage);
+                  }
+                }
+                
+                // Update trailing stop price (only move in favorable direction)
+                if (trade.direction === 'LONG') {
+                  trade.trailingStopPrice = Math.max(trade.trailingStopPrice || 0, trailingStopPrice);
+                } else {
+                  trade.trailingStopPrice = trade.trailingStopPrice === 0 ? trailingStopPrice : 
+                    Math.min(trade.trailingStopPrice, trailingStopPrice);
+                }
+                
+                // Check if trailing stop is triggered
+                let shouldExit = false;
+                if (trade.direction === 'LONG' && currentPrice <= trade.trailingStopPrice) {
+                  shouldExit = true;
+                } else if (trade.direction === 'SHORT' && currentPrice >= trade.trailingStopPrice) {
+                  shouldExit = true;
+                }
+                
+                if (shouldExit) {
+                  this.logger.debug(`Trailing stop exit triggered for ${trade.direction} ${trade.symbol} at ${currentPrice}`);
+                  
+                  // Execute trailing stop exit
+                  const orderResult = await this.orderExecution.placeSellOrder({
+                    symbol: trade.symbol,
+                    quantity: Math.abs(trade.quantity),
+                    price: currentPrice,
+                    orderType: 'MARKET',
+                    product: 'MIS',
+                    validity: 'DAY',
+                  });
+
+                  if (orderResult.success) {
+                    this.logger.debug(
+                      `Trailing stop exit executed: ${trade.direction} at ${currentPrice} (quantity: ${Math.abs(trade.quantity)})`
+                    );
+
+                    // Calculate P&L and add to trades array
+                    const pnl = trade.direction === 'LONG' 
+                      ? (currentPrice - trade.entryPrice) * trade.quantity
+                      : (trade.entryPrice - currentPrice) * trade.quantity;
+                    const duration = candles[i].timestamp - trade.entryTime;
+
+                    const completedTrade = {
+                      entryTime: new Date(trade.entryTime),
+                      exitTime: new Date(candles[i].timestamp),
+                      symbol: trade.symbol,
+                      direction: trade.direction,
+                      entryPrice: trade.entryPrice,
+                      exitPrice: currentPrice,
+                      quantity: Math.abs(trade.quantity),
+                      pnl,
+                      pnlPercentage,
+                      duration,
+                    };
+
+                    trades.push(completedTrade);
+                    currentBalance += pnl;
+
+                    // Remove from active trades
+                    activeTrades.splice(j, 1);
+                    currentLots -= Math.abs(trade.quantity);
+
+                    this.logger.debug(
+                      `Trailing stop trade closed: ${trade.direction} ${trade.symbol} P&L: ${pnl.toFixed(2)} (${pnlPercentage.toFixed(2)}%)`
+                    );
+                  }
+                }
+              }
+            }
+          } catch (error) {
+            this.logger.error(`Error processing trailing stops: ${error.message}`);
+          }
+        }
+
+        // Note: Stop loss will be checked AFTER signals are processed to prioritize Supertrend flips
+
+        // Process profit targets for active trades (if enabled)
+        if ((config.strategyConfig as any).profitTargetEnabled && activeTrades.length > 0) {
+          this.logger.debug(`Processing profit targets for ${activeTrades.length} active trades`);
+          const profitTargetPercentage = (config.strategyConfig as any).profitTargetPercentage || 0.025;
+          
+          for (let j = activeTrades.length - 1; j >= 0; j--) {
+            const trade = activeTrades[j];
+            const currentPrice = candles[i].close;
+            const profitPct = trade.direction === 'LONG' 
+              ? (currentPrice - trade.entryPrice) / trade.entryPrice
+              : (trade.entryPrice - currentPrice) / trade.entryPrice;
+            
+            if (profitPct >= profitTargetPercentage) {
+              this.logger.debug(`Profit target hit: ${trade.direction} ${trade.symbol} at ${currentPrice} (${(profitPct * 100).toFixed(2)}%)`);
+              
+              // Execute profit target exit
+              const orderResult = await this.orderExecution.placeSellOrder({
+                symbol: trade.symbol,
+                quantity: Math.abs(trade.quantity),
+                price: currentPrice,
+                orderType: 'MARKET',
+                product: 'MIS',
+                validity: 'DAY',
+              });
+
+              if (orderResult.success) {
+                // Calculate P&L and add to trades array
+                const pnl = trade.direction === 'LONG' 
+                  ? (currentPrice - trade.entryPrice) * trade.quantity
+                  : (trade.entryPrice - currentPrice) * trade.quantity;
+                const duration = candles[i].timestamp - trade.entryTime;
+
+                const completedTrade = {
+                  entryTime: new Date(trade.entryTime),
+                  exitTime: new Date(candles[i].timestamp),
+                  symbol: trade.symbol,
+                  direction: trade.direction,
+                  entryPrice: trade.entryPrice,
+                  exitPrice: currentPrice,
+                  quantity: trade.quantity,
+                  pnl: pnl,
+                  duration: duration,
+                  exitReason: 'PROFIT_TARGET'
+                };
+
+                trades.push(completedTrade);
+                this.logger.log(`🎯 PROFIT TARGET EXIT: ${trade.direction} ${trade.symbol} @ ₹${currentPrice}`);
+                this.logger.log(`   Entry: ₹${trade.entryPrice} at ${new Date(trade.entryTime).toISOString()}`);
+                this.logger.log(`   P&L: ₹${pnl.toFixed(2)} (${(profitPct * 100).toFixed(2)}%)`);
+
+                // Remove from active trades
+                activeTrades.splice(j, 1);
+                currentLots--;
+                currentBalance += pnl;
+              }
+            }
+          }
+        }
+
+        // Check for price action strategy exit conditions (price closes below/above entry Supertrend value)
+        if (config.strategyName === 'price-action' && activeTrades.length > 0) {
+          for (let j = activeTrades.length - 1; j >= 0; j--) {
+            const trade = activeTrades[j];
+            const currentPrice = candles[i].close;
+            
+            // Check if trade has entrySupertrend metadata
+            if (trade.metadata && trade.metadata.entrySupertrend) {
+              const entrySupertrend = trade.metadata.entrySupertrend;
+              let shouldExit = false;
+              let exitReason = '';
+              
+              if (trade.direction === 'LONG' && currentPrice < entrySupertrend) {
+                shouldExit = true;
+                exitReason = 'PRICE_BELOW_ENTRY_SUPERTREND';
+              } else if (trade.direction === 'SHORT' && currentPrice > entrySupertrend) {
+                shouldExit = true;
+                exitReason = 'PRICE_ABOVE_ENTRY_SUPERTREND';
+              }
+              
+              if (shouldExit) {
+                this.logger.log(`📉 PRICE ACTION EXIT: ${trade.direction} ${trade.symbol} @ ₹${currentPrice}`);
+                this.logger.log(`   Entry: ₹${trade.entryPrice} at ${new Date(trade.entryTime).toISOString()}`);
+                this.logger.log(`   Entry Supertrend: ₹${entrySupertrend}`);
+                this.logger.log(`   Exit Reason: ${exitReason}`);
+                
+                const orderResult = await this.orderExecution.placeSellOrder({
+                  symbol: trade.symbol,
+                  quantity: Math.abs(trade.quantity),
+                  price: currentPrice,
+                  orderType: 'MARKET',
+                  product: 'MIS',
+                  validity: 'DAY',
+                });
+
+                if (orderResult.success) {
+                  // Calculate P&L
+                  const pnl = trade.direction === 'LONG' 
+                    ? (currentPrice - trade.entryPrice) * trade.quantity
+                    : (trade.entryPrice - currentPrice) * trade.quantity;
+                  const pnlPercentage = (pnl / (trade.entryPrice * Math.abs(trade.quantity))) * 100;
+                  
+                  const completedTrade = {
+                    entryTime: new Date(trade.entryTime),
+                    exitTime: new Date(candles[i].timestamp),
+                    symbol: trade.symbol,
+                    direction: trade.direction,
+                    entryPrice: trade.entryPrice,
+                    exitPrice: currentPrice,
+                    quantity: Math.abs(trade.quantity),
+                    pnl,
+                    pnlPercentage,
+                    duration: candles[i].timestamp - trade.entryTime,
+                    exitReason: exitReason,
+                  };
+                  
+                  trades.push(completedTrade);
+                  currentBalance += pnl;
+                  currentLots--;
+                  
+                  this.logger.log(`   P&L: ₹${pnl.toFixed(2)} (${pnlPercentage.toFixed(2)}%)`);
+                  
+                  // Remove from active trades
+                  activeTrades.splice(j, 1);
+                }
+              }
+            }
+          }
+        }
+
         // Execute signals with safety checks
+        this.logger.debug(`Processing ${evaluation.signals.length} signals`);
         for (const signal of evaluation.signals) {
           if (!signal || !signal.data) {
             this.logger.error(
@@ -234,18 +678,48 @@ export class BacktestOrchestratorService {
           // Debug signal structure
           this.logger.debug(`Signal type: ${signal.type}`);
           this.logger.debug(`Signal data: ${JSON.stringify(signal.data)}`);
+          this.logger.debug(`Signal direction: ${signal.data.direction}`);
+          this.logger.debug(`Signal price: ${signal.data.price}`);
           
           if (signal.type === 'ENTRY') {
             const direction = signal.data.direction;
             const entryPrice = signal.data.price;
-            const quantity = config.strategyConfig.positionSize; // Use configured position size
+            
+            this.logger.debug(`ENTRY signal: direction=${direction}, price=${entryPrice}`);
+            
+            // CRITICAL FIX: For trend-following strategy, only allow one active position at a time
+            if (activeTrades.length > 0) {
+              this.logger.debug(`Skipping entry: ${activeTrades.length} active trades already exist`);
+              continue;
+            }
+            
+            // Dynamic position sizing based on available capital and current price
+            const maxTradePercent = (config.strategyConfig as any).maxTradePercent || 0.9; // Default 90% of balance
+            const availableCapital = currentBalance * maxTradePercent;
+            
+            // Calculate position size based on available capital and current price
+            let quantity;
+            this.logger.debug(`Dynamic position sizing check: ${(config.strategyConfig as any).dynamicPositionSizing} (type: ${typeof (config.strategyConfig as any).dynamicPositionSizing})`);
+            if ((config.strategyConfig as any).dynamicPositionSizing === true) {
+              // Dynamic sizing: use available capital to determine position size
+              const basePositionSize = (config.strategyConfig as any).basePositionSize || 1;
+              const maxPositionValue = availableCapital;
+              quantity = Math.floor(maxPositionValue / entryPrice);
+              
+              // Ensure minimum position size
+              quantity = Math.max(quantity, basePositionSize);
+              
+              this.logger.debug(`Dynamic position sizing: Available capital: ₹${availableCapital.toFixed(2)}, Price: ₹${entryPrice}, Calculated quantity: ${quantity}`);
+            } else {
+              // Fixed position sizing (original logic)
+              quantity = config.strategyConfig.positionSize;
+            }
 
             // Check if we can afford the trade
             const tradeCost = entryPrice * quantity;
-            if (tradeCost > currentBalance * 0.5) {
-              // Max 50% of balance per trade (more reasonable for options trading)
+            if (tradeCost > availableCapital) {
               this.logger.warn(
-                `Trade rejected: cost ${tradeCost} exceeds 50% of balance`,
+                `Trade rejected: cost ${tradeCost} exceeds ${(maxTradePercent * 100).toFixed(0)}% of balance (${availableCapital.toFixed(2)})`,
               );
               continue;
             }
@@ -271,6 +745,10 @@ export class BacktestOrchestratorService {
             });
 
             if (orderResult.success) {
+              // Log detailed trade entry
+              const entryTime = new Date(candles[i].timestamp).toISOString();
+              this.logger.log(`📈 TRADE ENTRY #${activeTrades.length + 1}: ${direction} ${signal.data.symbol} @ ₹${entryPrice} at ${entryTime}`);
+              
               this.logger.debug(
                 `Entry signal executed: ${direction} at ${entryPrice} (quantity: ${quantity})`,
               );
@@ -282,33 +760,239 @@ export class BacktestOrchestratorService {
                 entryPrice: entryPrice,
                 quantity: quantity,
                 entryTime: candles[i].timestamp,
+                // ATR value for dynamic stop loss
+                atrValue: currentCandles.length > 0 ? this.calculateATR(currentCandles.slice(-14)) : 0,
+                // Trailing stop fields
+                highestPrice: entryPrice,
+                lowestPrice: entryPrice,
+                trailingStopPrice: 0,
+                isTrailingActive: false,
+                // Store metadata for price action strategy
+                metadata: signal.data.metadata || {}
               });
 
               currentLots += quantity;
               // Track the first entry price for pyramiding calculations
             }
           } else if (signal.type === 'EXIT') {
-            // Exit all positions of this direction
-            const tradesToClose = activeTrades.filter(
-              (trade) => trade.direction === signal.data.direction,
+            // Use config-driven exit strategy (FIFO/LIFO)
+            const exitMode = config.strategyConfig.exitMode;
+            
+            this.logger.debug(
+              `Using ${exitMode} exit strategy for ${signal.data.direction} positions`
             );
 
-            for (const trade of tradesToClose) {
+            // Get trades to exit based on strategy
+            let directionTrades;
+            if (signal.data.direction === 'BOTH') {
+              // Exit all active trades when Supertrend flips
+              directionTrades = activeTrades;
+              this.logger.debug(`Exiting all active trades (${activeTrades.length}) due to Supertrend flip`);
+            } else {
+              // Exit trades of specific direction
+              directionTrades = activeTrades.filter(
+                (trade) => trade.direction === signal.data.direction,
+              );
+            }
+
+            if (directionTrades.length === 0) {
+              this.logger.debug(`No ${signal.data.direction} trades to exit`);
+              continue;
+            }
+
+            // Sort trades based on exit strategy
+            let tradesToExit;
+            if (exitMode === 'LIFO') {
+              // LIFO: Exit newest trades first (sort by entry time descending)
+              tradesToExit = directionTrades.sort((a, b) => b.entryTimestamp - a.entryTimestamp);
+              this.logger.debug(`LIFO: Exiting ${tradesToExit.length} trades (newest first)`);
+            } else {
+              // FIFO: Exit oldest trades first (sort by entry time ascending)
+              tradesToExit = directionTrades.sort((a, b) => a.entryTimestamp - b.entryTimestamp);
+              this.logger.debug(`FIFO: Exiting ${tradesToExit.length} trades (oldest first)`);
+            }
+
+            // Exit positions one by one
+            for (const trade of tradesToExit) {
               const orderResult = await this.orderExecution.placeSellOrder({
                 symbol: trade.symbol,
                 quantity: Math.abs(trade.quantity),
-                price: signal.data.price,
+                price: candles[i].close, // Use current candle close price, not signal price
                 orderType: 'MARKET',
                 product: 'MIS',
                 validity: 'DAY',
               });
 
               if (orderResult.success) {
+                // Safely format entry timestamp
+                let entryTimeStr = 'Invalid timestamp';
+                try {
+                  const entryDate = new Date(trade.entryTimestamp);
+                  if (!isNaN(entryDate.getTime())) {
+                    entryTimeStr = entryDate.toISOString();
+                  }
+                } catch (error) {
+                  this.logger.warn(`Invalid entry timestamp: ${trade.entryTimestamp}`);
+                }
+                
+                // Calculate P&L
+                const exitPrice = candles[i].close;
+                // For LONG: profit when exit > entry, for SHORT: profit when entry > exit
+                const pnl = trade.direction === 'LONG' 
+                  ? (exitPrice - trade.entryPrice) * trade.quantity
+                  : (trade.entryPrice - exitPrice) * trade.quantity;
+                const pnlPercentage = trade.direction === 'LONG'
+                  ? ((exitPrice - trade.entryPrice) / trade.entryPrice) * 100
+                  : ((trade.entryPrice - exitPrice) / trade.entryPrice) * 100;
+                const exitTime = new Date(candles[i].timestamp).toISOString();
+                
+                // Log detailed trade exit
+                this.logger.log(`📉 TRADE EXIT: ${trade.direction} ${trade.symbol} @ ₹${exitPrice} at ${exitTime}`);
+                this.logger.log(`   Entry: ₹${trade.entryPrice} at ${entryTimeStr}`);
+                this.logger.log(`   P&L: ₹${pnl.toFixed(2)} (${pnlPercentage.toFixed(2)}%)`);
+                
                 this.logger.debug(
-                  `Exit signal executed: ${trade.direction} at ${signal.data.price}`,
+                  `${exitMode} exit executed: ${trade.direction} at ${candles[i].close} (entry: ${trade.entryPrice}, entry time: ${entryTimeStr})`
                 );
-                currentLots -= Math.abs(trade.quantity);
+                
+                // CRITICAL FIX: Calculate P&L and add to trades array
+                const finalPnl = trade.direction === 'LONG' 
+                  ? (candles[i].close - trade.entryPrice) * trade.quantity
+                  : (trade.entryPrice - candles[i].close) * trade.quantity;
+                const finalPnlPercentage = (finalPnl / (trade.entryPrice * Math.abs(trade.quantity))) * 100;
+                const duration = candles[i].timestamp - trade.entryTime;
+                
+                const completedTrade = {
+                  entryTime: new Date(trade.entryTime),
+                  exitTime: new Date(candles[i].timestamp),
+                  symbol: trade.symbol,
+                  direction: trade.direction,
+                  entryPrice: trade.entryPrice,
+                  exitPrice: candles[i].close, // Use current candle close price
+                  quantity: Math.abs(trade.quantity),
+                  pnl,
+                  pnlPercentage,
+                  duration,
+                };
+                
+                // Add completed trade to trades array
+                trades.push(completedTrade);
+                
+                // Update balance with realized P&L
+                currentBalance += pnl;
+                
+                this.logger.debug(
+                  `Trade closed: ${trade.direction} ${trade.symbol} P&L: ${pnl.toFixed(2)} (${pnlPercentage.toFixed(2)}%)`
+                );
+                
+                // Remove the exited trade from active trades
+                const tradeIndex = activeTrades.findIndex(
+                  activeTrade => activeTrade === trade
+                );
+                if (tradeIndex !== -1) {
+                  activeTrades.splice(tradeIndex, 1);
+                  currentLots -= Math.abs(trade.quantity);
+                }
               }
+            }
+          }
+        }
+
+        // Check for stop loss exits AFTER signals are processed (only when Supertrend is still intact)
+        if ((config.strategyConfig as any).stopLossEnabled && activeTrades.length > 0) {
+          const currentPrice = candles[i].close;
+          const stopLossType = (config.strategyConfig as any).stopLossType || 'percentage';
+          
+          // Only check stop loss on candle close for the given timeframe
+          // This ensures we don't exit on intraday movements
+          for (let j = activeTrades.length - 1; j >= 0; j--) {
+            const trade = activeTrades[j];
+            let shouldExit = false;
+            let exitReason = '';
+            
+            if (stopLossType === 'ATR') {
+              // ATR-based stop loss
+              const stopLossATRMultiplier = (config.strategyConfig as any).stopLossATRMultiplier || 2.0;
+              const atrValue = trade.atrValue || 0; // ATR value at entry
+              const stopLossDistance = atrValue * stopLossATRMultiplier;
+              
+              if (trade.direction === 'LONG') {
+                const stopLossPrice = trade.entryPrice - stopLossDistance;
+                if (currentPrice <= stopLossPrice) {
+                  shouldExit = true;
+                  exitReason = `ATR Stop loss triggered: ${((trade.entryPrice - currentPrice) / trade.entryPrice * 100).toFixed(2)}% loss`;
+                }
+              } else if (trade.direction === 'SHORT') {
+                const stopLossPrice = trade.entryPrice + stopLossDistance;
+                if (currentPrice >= stopLossPrice) {
+                  shouldExit = true;
+                  exitReason = `ATR Stop loss triggered: ${((currentPrice - trade.entryPrice) / trade.entryPrice * 100).toFixed(2)}% loss`;
+                }
+              }
+            } else {
+              // Percentage-based stop loss (original logic)
+              const stopLossPercentage = (config.strategyConfig as any).stopLossPercentage || 0.03;
+              
+              if (trade.direction === 'LONG') {
+                const lossPercentage = (trade.entryPrice - currentPrice) / trade.entryPrice;
+                if (lossPercentage >= stopLossPercentage) {
+                  shouldExit = true;
+                  exitReason = `Stop loss triggered: ${(lossPercentage * 100).toFixed(2)}% loss`;
+                }
+              } else if (trade.direction === 'SHORT') {
+                const lossPercentage = (currentPrice - trade.entryPrice) / trade.entryPrice;
+                if (lossPercentage >= stopLossPercentage) {
+                  shouldExit = true;
+                  exitReason = `Stop loss triggered: ${(lossPercentage * 100).toFixed(2)}% loss`;
+                }
+              }
+            }
+            
+            if (shouldExit) {
+              this.logger.warn(`🛑 ${exitReason} for ${trade.direction} ${trade.symbol} @ ₹${currentPrice}`);
+              
+              // Execute stop loss exit
+              const orderResult = await this.orderExecution.placeSellOrder({
+                symbol: trade.symbol,
+                quantity: Math.abs(trade.quantity),
+                price: currentPrice,
+                orderType: 'MARKET',
+                product: 'MIS',
+                validity: 'DAY',
+              });
+
+              if (orderResult.success) {
+                // Calculate P&L
+                const pnl = trade.direction === 'LONG' 
+                  ? (currentPrice - trade.entryPrice) * trade.quantity
+                  : (trade.entryPrice - currentPrice) * trade.quantity;
+                
+                const completedTrade = {
+                  entryTime: new Date(trade.entryTime),
+                  exitTime: new Date(candles[i].timestamp),
+                  symbol: trade.symbol,
+                  direction: trade.direction,
+                  entryPrice: trade.entryPrice,
+                  exitPrice: currentPrice,
+                  quantity: Math.abs(trade.quantity),
+                  pnl,
+                  pnlPercentage: (pnl / (trade.entryPrice * Math.abs(trade.quantity))) * 100,
+                  duration: candles[i].timestamp - trade.entryTime,
+                };
+
+                trades.push(completedTrade);
+                
+                // Update balance with realized P&L
+                currentBalance += pnl;
+                
+                this.logger.log(`📉 STOP LOSS EXIT: ${trade.direction} ${trade.symbol} @ ₹${currentPrice}`);
+                this.logger.log(`   Entry: ₹${trade.entryPrice} at ${new Date(trade.entryTime).toISOString()}`);
+                this.logger.log(`   P&L: ₹${pnl.toFixed(2)} (${((pnl / (trade.entryPrice * Math.abs(trade.quantity))) * 100).toFixed(2)}%)`);
+              }
+              
+              // Remove the trade from active trades
+              activeTrades.splice(j, 1);
+              currentLots = Math.max(0, currentLots - Math.abs(trade.quantity));
             }
           }
         }
@@ -333,7 +1017,10 @@ export class BacktestOrchestratorService {
             Math.abs(position.quantity) < Math.abs(trade.quantity) * 0.9
           ) {
             const exitPrice = candles[i].close;
-            const pnl = (exitPrice - trade.entryPrice) * trade.quantity;
+            // For LONG: profit when exit > entry, for SHORT: profit when entry > exit
+            const pnl = trade.direction === 'LONG' 
+              ? (exitPrice - trade.entryPrice) * trade.quantity
+              : (trade.entryPrice - exitPrice) * trade.quantity;
             const pnlPercentage =
               (pnl / (trade.entryPrice * Math.abs(trade.quantity))) * 100;
             const duration = candles[i].timestamp - trade.entryTime;
@@ -353,6 +1040,10 @@ export class BacktestOrchestratorService {
 
             trades.push(completedTrade);
             activeTrades.splice(j, 1);
+            
+            // Update balance with realized P&L
+            currentBalance += pnl;
+            
             this.logger.debug(
               `Trade closed: ${trade.direction} ${trade.symbol} P&L: ${pnl.toFixed(2)} (${pnlPercentage.toFixed(2)}%)`,
             );
@@ -368,15 +1059,16 @@ export class BacktestOrchestratorService {
           maxDrawdown = drawdown;
         }
 
-        // Time-based exit check
-        const currentTime = new Date(candles[i].timestamp);
-        const exitTime = new Date(currentTime);
-        const [hours, minutes] = config.strategyConfig.misExitTime
-          .split(':')
-          .map(Number);
-        exitTime.setHours(hours, minutes, 0, 0);
+        // Time-based exit check (only if misExitTime is configured)
+        if (config.strategyConfig.misExitTime) {
+          const currentTime = new Date(candles[i].timestamp);
+          const exitTime = new Date(currentTime);
+          const [hours, minutes] = config.strategyConfig.misExitTime
+            .split(':')
+            .map(Number);
+          exitTime.setHours(hours, minutes, 0, 0);
 
-        if (currentTime >= exitTime && activeTrades.length > 0) {
+          if (currentTime >= exitTime && activeTrades.length > 0) {
           this.logger.log(
             `Time-based exit triggered at ${config.strategyConfig.misExitTime}`,
           );
@@ -393,8 +1085,9 @@ export class BacktestOrchestratorService {
             });
 
             if (orderResult.success) {
-              const pnl =
-                (candles[i].close - trade.entryPrice) * trade.quantity;
+              const pnl = trade.direction === 'LONG' 
+                ? (candles[i].close - trade.entryPrice) * trade.quantity
+                : (trade.entryPrice - candles[i].close) * trade.quantity;
               const pnlPercentage =
                 (pnl / (trade.entryPrice * Math.abs(trade.quantity))) * 100;
 
@@ -412,6 +1105,10 @@ export class BacktestOrchestratorService {
               };
 
               trades.push(completedTrade);
+              
+              // Update balance with realized P&L
+              currentBalance += pnl;
+              
               this.logger.debug(
                 `Time-based exit: ${trade.direction} ${trade.symbol} P&L: ${pnl.toFixed(2)} (${pnlPercentage.toFixed(2)}%)`,
               );
@@ -420,59 +1117,70 @@ export class BacktestOrchestratorService {
 
           activeTrades.length = 0; // Clear all active trades
           currentLots = 0;
-        }
-
-        // Capital protection: Check if total P&L is below max loss threshold
-        const totalPnL = currentEquity - config.initialBalance;
-        const maxAllowedLoss =
-          -config.initialBalance * config.strategyConfig.maxLossPct;
-
-        if (totalPnL <= maxAllowedLoss) {
-          this.logger.error(
-            `Capital protection triggered: P&L ${totalPnL.toFixed(2)} below max loss ${maxAllowedLoss.toFixed(2)}`,
-          );
-
-          // Force exit all positions
-          for (const trade of activeTrades) {
-            const orderResult = await this.orderExecution.placeSellOrder({
-              symbol: trade.symbol,
-              quantity: Math.abs(trade.quantity),
-              price: candles[i].close,
-              orderType: 'MARKET',
-              product: 'MIS',
-              validity: 'DAY',
-            });
-
-            if (orderResult.success) {
-              const pnl =
-                (candles[i].close - trade.entryPrice) * trade.quantity;
-              const completedTrade = {
-                entryTime: new Date(trade.entryTime),
-                exitTime: new Date(candles[i].timestamp),
-                symbol: trade.symbol,
-                direction: trade.direction,
-                entryPrice: trade.entryPrice,
-                exitPrice: candles[i].close,
-                quantity: Math.abs(trade.quantity),
-                pnl,
-                pnlPercentage:
-                  (pnl / (trade.entryPrice * Math.abs(trade.quantity))) * 100,
-                duration: candles[i].timestamp - trade.entryTime,
-              };
-
-              trades.push(completedTrade);
-            }
           }
-
-          activeTrades.length = 0;
-          currentLots = 0;
-          break;
         }
 
-        // Circuit breaker: Stop if drawdown exceeds 50%
-        if (drawdown > 0.5) {
+        // Capital protection: Check if total P&L is below max loss threshold (configurable)
+        const enableCapitalProtection = (config.strategyConfig as any).enableCapitalProtection !== false;
+        if (enableCapitalProtection) {
+          const totalPnL = currentEquity - config.initialBalance;
+          const maxAllowedLoss =
+            -config.initialBalance * config.strategyConfig.maxLossPct;
+
+          if (totalPnL <= maxAllowedLoss) {
+            this.logger.error(
+              `Capital protection triggered: P&L ${totalPnL.toFixed(2)} below max loss ${maxAllowedLoss.toFixed(2)}`,
+            );
+
+            // Force exit all positions
+            for (const trade of activeTrades) {
+              const orderResult = await this.orderExecution.placeSellOrder({
+                symbol: trade.symbol,
+                quantity: Math.abs(trade.quantity),
+                price: candles[i].close,
+                orderType: 'MARKET',
+                product: 'MIS',
+                validity: 'DAY',
+              });
+
+              if (orderResult.success) {
+                // For LONG: profit when exit > entry, for SHORT: profit when entry > exit
+                const pnl = trade.direction === 'LONG' 
+                  ? (candles[i].close - trade.entryPrice) * trade.quantity
+                  : (trade.entryPrice - candles[i].close) * trade.quantity;
+                const completedTrade = {
+                  entryTime: new Date(trade.entryTime),
+                  exitTime: new Date(candles[i].timestamp),
+                  symbol: trade.symbol,
+                  direction: trade.direction,
+                  entryPrice: trade.entryPrice,
+                  exitPrice: candles[i].close,
+                  quantity: Math.abs(trade.quantity),
+                  pnl,
+                  pnlPercentage:
+                    (pnl / (trade.entryPrice * Math.abs(trade.quantity))) * 100,
+                  duration: candles[i].timestamp - trade.entryTime,
+                };
+
+                trades.push(completedTrade);
+                
+                // Update balance with realized P&L
+                currentBalance += pnl;
+              }
+            }
+
+            activeTrades.length = 0;
+            currentLots = 0;
+            break;
+          }
+        }
+
+        // Circuit breaker: Stop if drawdown exceeds threshold (configurable)
+        const enableCircuitBreaker = (config.strategyConfig as any).enableCircuitBreaker !== false;
+        const maxDrawdownThreshold = (config.strategyConfig as any).maxDrawdown || 0.5;
+        if (enableCircuitBreaker && drawdown > maxDrawdownThreshold) {
           this.logger.error(
-            `Circuit breaker triggered: drawdown ${(drawdown * 100).toFixed(2)}% exceeds 50%`,
+            `Circuit breaker triggered: drawdown ${(drawdown * 100).toFixed(2)}% exceeds ${(maxDrawdownThreshold * 100).toFixed(2)}%`,
           );
           break;
         }
@@ -495,9 +1203,57 @@ export class BacktestOrchestratorService {
       }
     }
 
+    // CRITICAL FIX: Close any remaining active trades
+    if (activeTrades.length > 0) {
+      this.logger.warn(`Closing ${activeTrades.length} remaining active trades at end of backtest`);
+      const finalCandle = candles[candles.length - 1];
+      
+      for (const trade of activeTrades) {
+        const exitPrice = finalCandle.close;
+        // For LONG: profit when exit > entry, for SHORT: profit when entry > exit
+        const pnl = trade.direction === 'LONG' 
+          ? (exitPrice - trade.entryPrice) * trade.quantity
+          : (trade.entryPrice - exitPrice) * trade.quantity;
+        const pnlPercentage = (pnl / (trade.entryPrice * Math.abs(trade.quantity))) * 100;
+        const duration = finalCandle.timestamp - trade.entryTime;
+        
+        // Log final trade closure
+        const entryTime = new Date(trade.entryTime).toISOString();
+        const exitTime = new Date(finalCandle.timestamp).toISOString();
+        this.logger.log(`🏁 FINAL TRADE EXIT: ${trade.direction} ${trade.symbol} @ ₹${exitPrice} at ${exitTime}`);
+        this.logger.log(`   Entry: ₹${trade.entryPrice} at ${entryTime}`);
+        this.logger.log(`   P&L: ₹${pnl.toFixed(2)} (${pnlPercentage.toFixed(2)}%)`);
+        
+        const completedTrade = {
+          entryTime: new Date(trade.entryTime),
+          exitTime: new Date(finalCandle.timestamp),
+          symbol: trade.symbol,
+          direction: trade.direction,
+          entryPrice: trade.entryPrice,
+          exitPrice,
+          quantity: Math.abs(trade.quantity),
+          pnl,
+          pnlPercentage,
+          duration,
+        };
+        
+        trades.push(completedTrade);
+        currentBalance += pnl;
+        
+        this.logger.debug(
+          `Final trade closed: ${trade.direction} ${trade.symbol} P&L: ${pnl.toFixed(2)} (${pnlPercentage.toFixed(2)}%)`
+        );
+      }
+    }
+    
+    // SAFEGUARD: Validate trade tracking consistency
+    if (trades.length === 0 && activeTrades.length > 0) {
+      this.logger.error('CRITICAL: Active trades exist but no completed trades! Trade tracking failed.');
+    }
+    
     // Calculate final results with safety validation
-    const finalBalance = await this.orderExecution.getBalance();
-    const totalReturn = finalBalance.totalBalance - config.initialBalance;
+    // Use the tracked currentBalance instead of MockOrderExecutionProvider balance
+    const totalReturn = currentBalance - config.initialBalance;
     const totalReturnPercentage = (totalReturn / config.initialBalance) * 100;
 
     // Validate results for sanity
@@ -522,9 +1278,38 @@ export class BacktestOrchestratorService {
       sharpeRatio: this.calculateSharpeRatio(equityCurve),
       trades: trades,
       equityCurve,
+      initialCapital: config.initialBalance || 100000,
+      finalCapital: (config.initialBalance || 100000) + totalReturn,
+      maxWin: trades.length > 0 ? Math.max(...trades.map(t => t.pnl).filter(pnl => pnl > 0), 0) : 0,
+      maxLoss: trades.length > 0 ? Math.min(...trades.map(t => t.pnl).filter(pnl => pnl < 0), 0) : 0,
     };
 
     return result;
+  }
+
+  /**
+   * Calculate ATR (Average True Range) for trailing stop calculations
+   */
+  private calculateATR(candles: any[]): number {
+    if (candles.length < 2) return 1.0;
+
+    let trueRanges: number[] = [];
+    for (let i = 1; i < candles.length; i++) {
+      const current = candles[i];
+      const previous = candles[i - 1];
+      
+      const highLow = current.high - current.low;
+      const highClose = Math.abs(current.high - previous.close);
+      const lowClose = Math.abs(current.low - previous.close);
+      
+      const trueRange = Math.max(highLow, highClose, lowClose);
+      trueRanges.push(trueRange);
+    }
+
+    if (trueRanges.length === 0) return 1.0;
+    
+    const atr = trueRanges.reduce((sum, tr) => sum + tr, 0) / trueRanges.length;
+    return atr;
   }
 
   /**

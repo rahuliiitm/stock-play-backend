@@ -135,3 +135,4 @@ async function testAdvancedATRLogic() {
 testAdvancedATRLogic().catch(error => {
   console.error('❌ Advanced ATR logic test failed:', error);
 });
+

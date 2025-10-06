@@ -56,3 +56,4 @@ function debugEMACalculation() {
 
 // Run the debug
 debugEMACalculation();
+

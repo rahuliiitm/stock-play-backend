@@ -1,0 +1,710 @@
+🚀 Testing TREND-FOLLOWING Strategy (Supertrend + DEMA)
+=====================================================
+📌 Strategy: Supertrend(10,1) + DEMA(52) on Weekly Timeframe
+📌 Entry: Price > DEMA(52) AND Price above Supertrend(10,1) → Long
+📌 Entry: Price < DEMA(52) AND Price below Supertrend(10,1) → Short
+📌 Exit: Only when Supertrend flips (no partial exits)
+
+CsvDataProvider constructor called!
+CSV_DATA_DIR env var: /Users/rjain/stockplay/stock-play-backend/api/data
+Data directory: /Users/rjain/stockplay/stock-play-backend/api/data
+Current working directory: /Users/rjain/stockplay/stock-play-backend/api
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[CsvDataProvider] [39m[32mCsvDataProvider initialized with data directory: /Users/rjain/stockplay/stock-play-backend/api/data[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[CsvDataProvider] [39m[32mCurrent working directory: /Users/rjain/stockplay/stock-play-backend/api[39m
+📊 Testing Weekly Trend-Following Strategy:
+   Weekly Trend-Following (DEMA 52, Supertrend 10,1) - Only 1 active entry at a time
+
+📌 Strategy: Supertrend(10,1) + DEMA(52) on Weekly Timeframe
+📌 Entry: Price > DEMA(52) AND Price above Supertrend(10,1) → Long
+📌 Entry: Price < DEMA(52) AND Price below Supertrend(10,1) → Short
+📌 Exit: Only when Supertrend flips (no partial exits)
+📌 Position Management: Only 1 active entry at a time
+
+🧪 Testing Weekly Strategy: Weekly Trend-Following (DEMA 52, Supertrend 10,1)
+   Weekly timeframe with DEMA(52) and Supertrend(10,1) - Only 1 active entry at a time
+   Period: 2015-2024 (10 years)
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32mStarting backtest for NIFTY from Thu Jan 01 2015 05:30:00 GMT+0530 (India Standard Time) to Wed Jan 01 2025 05:29:59 GMT+0530 (India Standard Time)[39m
+[33m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [33m   WARN[39m [38;5;3m[BacktestOrchestratorService] [39m[33mConfiguration warnings: Date range is very long (>5 years), this may take significant time to process, Start date is more than 1 year ago - data may be outdated[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32mSafety checks passed: ℹ️ 1 medium-severity issues - review recommended[39m
+CsvDataProvider.getHistoricalCandles called!
+Symbol: NIFTY, Timeframe: 1w
+Start: 2015-01-01T00:00:00.000Z, End: 2024-12-31T23:59:59.000Z
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[CsvDataProvider] [39m[32mLoading historical candles for NIFTY 1w from 2015-01-01T00:00:00.000Z to 2024-12-31T23:59:59.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[CsvDataProvider] [39m[32mData directory: /Users/rjain/stockplay/stock-play-backend/api/data[39m
+File path: /Users/rjain/stockplay/stock-play-backend/api/data/NIFTY_10year_1w.csv
+File exists: true
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[CsvDataProvider] [39m[32mLooking for file: /Users/rjain/stockplay/stock-play-backend/api/data/NIFTY_10year_1w.csv[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[CsvDataProvider] [39m[32mFile exists: true[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[CsvDataProvider] [39m[32mReading CSV file: /Users/rjain/stockplay/stock-play-backend/api/data/NIFTY_10year_1w.csv[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[CsvDataProvider] [39m[32mLoaded 522 candles for NIFTY 1w[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[CsvDataProvider] [39m[32mDate range requested: 2015-01-01T00:00:00.000Z to 2024-12-31T23:59:59.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[CsvDataProvider] [39m[32mFirst candle: 2015-01-04T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[CsvDataProvider] [39m[32mLast candle: 2024-12-29T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32mLoaded 522 candles for backtesting[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 8174.25[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: SHORT NIFTY @ ₹8174.25 at 2016-12-25T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 8641.95[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: SHORT NIFTY @ ₹8641.95 at 2017-01-22T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹8174.25 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹467.70 (5.72%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 9100.4[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹9100.4 at 2017-03-19T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 9196.9[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹9196.9 at 2017-04-02T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹9100.4 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹96.50 (1.06%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 9147.3[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹9147.3 at 2017-04-09T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 9304.65[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹9304.65 at 2017-04-23T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹9147.3 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹157.35 (1.72%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 9578[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹9578 at 2017-06-11T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 9886.7[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹9886.7 at 2017-07-09T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹9578 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹308.70 (3.22%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 9971.05[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹9971.05 at 2017-08-27T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 9963.6[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹9963.6 at 2017-09-17T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹9971.05 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹-7.45 (-0.07%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 9987.2[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹9987.2 at 2017-10-01T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 10125.95[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹10125.95 at 2017-10-15T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹9987.2 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹138.75 (1.39%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 10334.4[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹10334.4 at 2017-11-05T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 10526.45[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹10526.45 at 2017-12-24T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹10334.4 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹192.05 (1.86%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 10561.35[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹10561.35 at 2017-12-31T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 10667.3[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹10667.3 at 2018-01-07T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹10561.35 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹105.95 (1.00%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 10483.7[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹10483.7 at 2018-04-08T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 10694.7[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹10694.7 at 2018-04-22T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹10483.7 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹211.00 (2.01%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 10611.2[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹10611.2 at 2018-05-20T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 10815.85[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹10815.85 at 2018-06-10T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹10611.2 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹204.65 (1.93%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 10824.35[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹10824.35 at 2018-06-17T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 11021.95[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹11021.95 at 2018-07-08T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹10824.35 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹197.60 (1.83%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 11465.55[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹11465.55 at 2018-08-12T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 11556.3[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹11556.3 at 2018-08-19T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹11465.55 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹90.75 (0.79%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 11586.05[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹11586.05 at 2018-09-02T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 10263.55[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹10263.55 at 2018-09-30T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹11586.05 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹-1322.50 (-11.41%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 10581.55[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹10581.55 at 2018-11-04T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 10932.6[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹10932.6 at 2019-02-03T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹10581.55 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹351.05 (3.32%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 10728.8[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹10728.8 at 2019-02-10T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 11036.6[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹11036.6 at 2019-03-03T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹10728.8 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹307.80 (2.87%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 11611.4[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹11611.4 at 2019-03-24T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 11684.1[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹11684.1 at 2019-03-31T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹11611.4 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹72.70 (0.63%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 11631.55[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹11631.55 at 2019-04-07T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 11746.85[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹11746.85 at 2019-04-14T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹11631.55 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹115.30 (0.99%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 11748.7[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹11748.7 at 2019-04-21T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 11863.75[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹11863.75 at 2019-06-02T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹11748.7 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹115.05 (0.98%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 11810.85[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹11810.85 at 2019-06-09T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 11297.7[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹11297.7 at 2019-07-21T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹11810.85 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹-513.15 (-4.34%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 11275.45[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹11275.45 at 2019-09-15T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 11628[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹11628 at 2019-10-20T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹11275.45 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹352.55 (3.13%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 11895.3[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹11895.3 at 2019-11-10T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 11916.1[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹11916.1 at 2019-11-17T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹11895.3 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹20.80 (0.17%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 11914.15[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹11914.15 at 2019-12-01T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 12267.45[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹12267.45 at 2019-12-15T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹11914.15 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹353.30 (2.97%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 12256.5[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹12256.5 at 2020-01-05T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 12346.1[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹12346.1 at 2020-01-12T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹12256.5 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹89.60 (0.73%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 12252.15[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹12252.15 at 2020-01-19T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 10020.45[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹10020.45 at 2020-03-08T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹12252.15 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹-2231.70 (-18.21%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 8744.35[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: SHORT NIFTY @ ₹8744.35 at 2020-03-15T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 8673.5[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: SHORT NIFTY @ ₹8673.5 at 2020-03-22T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹8744.35 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹-70.85 (-0.81%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 8106.45[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: SHORT NIFTY @ ₹8106.45 at 2020-03-29T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 9958.15[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: SHORT NIFTY @ ₹9958.15 at 2020-06-07T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹8106.45 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹1851.70 (22.84%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 11216.9[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹11216.9 at 2020-08-02T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 11183.05[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹11183.05 at 2020-08-09T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹11216.9 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹-33.85 (-0.30%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 11358.35[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹11358.35 at 2020-08-30T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 11770.25[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹11770.25 at 2020-10-11T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹11358.35 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹411.90 (3.63%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 11646.45[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹11646.45 at 2020-10-25T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 12767.55[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹12767.55 at 2020-11-08T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹11646.45 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹1121.10 (9.63%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 13740.4[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹13740.4 at 2020-12-20T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 14014.8[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹14014.8 at 2020-12-27T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹13740.4 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹274.40 (2.00%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 14366.8[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹14366.8 at 2021-01-17T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 15003.45[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹15003.45 at 2021-02-14T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹14366.8 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹636.65 (4.43%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 14963.15[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹14963.15 at 2021-02-28T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 15455.3[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹15455.3 at 2021-05-23T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹14963.15 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹492.15 (3.29%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 15719.85[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹15719.85 at 2021-06-13T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 15847.6[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹15847.6 at 2021-06-20T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹15719.85 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹127.75 (0.81%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 15697.05[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹15697.05 at 2021-07-04T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 15923.6[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹15923.6 at 2021-07-11T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹15697.05 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹226.55 (1.44%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 15850.8[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹15850.8 at 2021-07-18T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 16254.7[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹16254.7 at 2021-08-01T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹15850.8 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹403.90 (2.55%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 17918.9[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹17918.9 at 2021-10-31T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 17210.3[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹17210.3 at 2021-11-28T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹17918.9 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹-708.60 (-3.95%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 17364.25[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹17364.25 at 2021-12-26T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 18235.5[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹18235.5 at 2022-01-09T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹17364.25 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹871.25 (5.02%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 17650.45[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹17650.45 at 2022-01-16T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 16668.8[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹16668.8 at 2022-02-20T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹17650.45 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹-981.65 (-5.56%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 17299.4[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹17299.4 at 2022-03-13T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 17800.3[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹17800.3 at 2022-04-03T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹17299.4 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹500.90 (2.90%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 17467.45[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹17467.45 at 2022-04-10T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 15767.15[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹15767.15 at 2022-05-08T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹17467.45 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹-1700.30 (-9.73%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 16217.5[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹16217.5 at 2022-07-03T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 17389.05[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹17389.05 at 2022-07-31T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹16217.5 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹1171.55 (7.22%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 17582.9[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹17582.9 at 2022-08-21T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 18127.9[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹18127.9 at 2022-10-30T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹17582.9 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹545.00 (3.10%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 18493.25[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹18493.25 at 2022-12-04T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 17830.8[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹17830.8 at 2023-01-29T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹18493.25 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹-662.45 (-3.58%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 17602[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹17602 at 2023-04-02T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 18069.95[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹18069.95 at 2023-04-30T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹17602 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹467.95 (2.66%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 19638[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹19638 at 2023-07-23T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 19684.6[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹19684.6 at 2023-09-17T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹19638 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹46.60 (0.24%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 19638.2[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹19638.2 at 2023-09-24T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 19226.05[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹19226.05 at 2023-10-29T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹19638.2 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹-412.15 (-2.10%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 19522.3[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹19522.3 at 2023-11-05T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 20255.75[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹20255.75 at 2023-11-26T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹19522.3 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹733.45 (3.76%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 21448.7[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹21448.7 at 2023-12-10T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 21332.35[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹21332.35 at 2023-12-17T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹21448.7 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹-116.35 (-0.54%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 21586.95[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹21586.95 at 2024-01-14T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 21853.3[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹21853.3 at 2024-01-28T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹21586.95 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹266.35 (1.23%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 22033.5[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹22033.5 at 2024-02-11T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 22194.25[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹22194.25 at 2024-02-18T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹22033.5 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹160.75 (0.73%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 21996.35[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹21996.35 at 2024-03-10T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 22523.4[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹22523.4 at 2024-03-31T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹21996.35 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹527.05 (2.40%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 22149.7[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹22149.7 at 2024-04-14T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 22550.45[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹22550.45 at 2024-05-26T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹22149.7 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹400.75 (1.81%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 23270.05[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹23270.05 at 2024-06-02T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 23454.15[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹23454.15 at 2024-06-09T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹23270.05 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹184.10 (0.79%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 24851.75[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹24851.75 at 2024-07-21T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 24699.45[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹24699.45 at 2024-07-28T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹24851.75 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹-152.30 (-0.61%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 24364.4[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹24364.4 at 2024-08-04T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 25247[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹25247 at 2024-08-25T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹24364.4 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹882.60 (3.62%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 24868.5[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹24868.5 at 2024-09-01T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock SELL order: 1 NIFTY @ 25343.55[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📉 TRADE EXIT: LONG NIFTY @ ₹25343.55 at 2024-09-08T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹24868.5 at Invalid timestamp[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹475.05 (1.91%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[MockOrderExecutionProvider] [39m[32mMock BUY order: 1 NIFTY @ 24669[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m📈 TRADE ENTRY #1: LONG NIFTY @ ₹24669 at 2024-12-01T18:30:00.000Z[39m
+[33m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [33m   WARN[39m [38;5;3m[BacktestOrchestratorService] [39m[33mClosing 1 remaining active trades at end of backtest[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m🏁 FINAL TRADE EXIT: LONG NIFTY @ ₹23990.15 at 2024-12-29T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   Entry: ₹24669 at 2024-12-01T18:30:00.000Z[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32m   P&L: ₹-678.85 (-2.75%)[39m
+[32m[Nest] 94533  - [39m09/29/2025, 8:07:27 PM [32m    LOG[39m [38;5;3m[BacktestOrchestratorService] [39m[32mBacktest completed. Total return: 7.14%[39m
+   📈 Results:
+      Total Trades: 57
+      Win Rate: 75.44%
+      Break-Even Rate: 0.0%
+      Total Return: 7.14%
+      Annualized Return: 7.14%
+      Avg Win: ₹389.04
+      Avg Loss: ₹-685.15
+      Max Drawdown: 2.31%
+      Trades Logged: 57
+   🧾 Completed Trades:
+      1. SHORT NIFTY
+         Entry: 2016-12-25T18:30:00.000Z @ ₹8174.25
+         Exit:  2017-01-22T18:30:00.000Z @ ₹8641.95
+         Qty:   1
+         P&L:   ₹467.70 (5.72%)
+      2. LONG NIFTY
+         Entry: 2017-03-19T18:30:00.000Z @ ₹9100.40
+         Exit:  2017-04-02T18:30:00.000Z @ ₹9196.90
+         Qty:   1
+         P&L:   ₹96.50 (1.06%)
+      3. LONG NIFTY
+         Entry: 2017-04-09T18:30:00.000Z @ ₹9147.30
+         Exit:  2017-04-23T18:30:00.000Z @ ₹9304.65
+         Qty:   1
+         P&L:   ₹157.35 (1.72%)
+      4. LONG NIFTY
+         Entry: 2017-06-11T18:30:00.000Z @ ₹9578.00
+         Exit:  2017-07-09T18:30:00.000Z @ ₹9886.70
+         Qty:   1
+         P&L:   ₹308.70 (3.22%)
+      5. LONG NIFTY
+         Entry: 2017-08-27T18:30:00.000Z @ ₹9971.05
+         Exit:  2017-09-17T18:30:00.000Z @ ₹9963.60
+         Qty:   1
+         P&L:   ₹-7.45 (-0.07%)
+      6. LONG NIFTY
+         Entry: 2017-10-01T18:30:00.000Z @ ₹9987.20
+         Exit:  2017-10-15T18:30:00.000Z @ ₹10125.95
+         Qty:   1
+         P&L:   ₹138.75 (1.39%)
+      7. LONG NIFTY
+         Entry: 2017-11-05T18:30:00.000Z @ ₹10334.40
+         Exit:  2017-12-24T18:30:00.000Z @ ₹10526.45
+         Qty:   1
+         P&L:   ₹192.05 (1.86%)
+      8. LONG NIFTY
+         Entry: 2017-12-31T18:30:00.000Z @ ₹10561.35
+         Exit:  2018-01-07T18:30:00.000Z @ ₹10667.30
+         Qty:   1
+         P&L:   ₹105.95 (1.00%)
+      9. LONG NIFTY
+         Entry: 2018-04-08T18:30:00.000Z @ ₹10483.70
+         Exit:  2018-04-22T18:30:00.000Z @ ₹10694.70
+         Qty:   1
+         P&L:   ₹211.00 (2.01%)
+      10. LONG NIFTY
+         Entry: 2018-05-20T18:30:00.000Z @ ₹10611.20
+         Exit:  2018-06-10T18:30:00.000Z @ ₹10815.85
+         Qty:   1
+         P&L:   ₹204.65 (1.93%)
+      11. LONG NIFTY
+         Entry: 2018-06-17T18:30:00.000Z @ ₹10824.35
+         Exit:  2018-07-08T18:30:00.000Z @ ₹11021.95
+         Qty:   1
+         P&L:   ₹197.60 (1.83%)
+      12. LONG NIFTY
+         Entry: 2018-08-12T18:30:00.000Z @ ₹11465.55
+         Exit:  2018-08-19T18:30:00.000Z @ ₹11556.30
+         Qty:   1
+         P&L:   ₹90.75 (0.79%)
+      13. LONG NIFTY
+         Entry: 2018-09-02T18:30:00.000Z @ ₹11586.05
+         Exit:  2018-09-30T18:30:00.000Z @ ₹10263.55
+         Qty:   1
+         P&L:   ₹-1322.50 (-11.41%)
+      14. LONG NIFTY
+         Entry: 2018-11-04T18:30:00.000Z @ ₹10581.55
+         Exit:  2019-02-03T18:30:00.000Z @ ₹10932.60
+         Qty:   1
+         P&L:   ₹351.05 (3.32%)
+      15. LONG NIFTY
+         Entry: 2019-02-10T18:30:00.000Z @ ₹10728.80
+         Exit:  2019-03-03T18:30:00.000Z @ ₹11036.60
+         Qty:   1
+         P&L:   ₹307.80 (2.87%)
+      16. LONG NIFTY
+         Entry: 2019-03-24T18:30:00.000Z @ ₹11611.40
+         Exit:  2019-03-31T18:30:00.000Z @ ₹11684.10
+         Qty:   1
+         P&L:   ₹72.70 (0.63%)
+      17. LONG NIFTY
+         Entry: 2019-04-07T18:30:00.000Z @ ₹11631.55
+         Exit:  2019-04-14T18:30:00.000Z @ ₹11746.85
+         Qty:   1
+         P&L:   ₹115.30 (0.99%)
+      18. LONG NIFTY
+         Entry: 2019-04-21T18:30:00.000Z @ ₹11748.70
+         Exit:  2019-06-02T18:30:00.000Z @ ₹11863.75
+         Qty:   1
+         P&L:   ₹115.05 (0.98%)
+      19. LONG NIFTY
+         Entry: 2019-06-09T18:30:00.000Z @ ₹11810.85
+         Exit:  2019-07-21T18:30:00.000Z @ ₹11297.70
+         Qty:   1
+         P&L:   ₹-513.15 (-4.34%)
+      20. LONG NIFTY
+         Entry: 2019-09-15T18:30:00.000Z @ ₹11275.45
+         Exit:  2019-10-20T18:30:00.000Z @ ₹11628.00
+         Qty:   1
+         P&L:   ₹352.55 (3.13%)
+      21. LONG NIFTY
+         Entry: 2019-11-10T18:30:00.000Z @ ₹11895.30
+         Exit:  2019-11-17T18:30:00.000Z @ ₹11916.10
+         Qty:   1
+         P&L:   ₹20.80 (0.17%)
+      22. LONG NIFTY
+         Entry: 2019-12-01T18:30:00.000Z @ ₹11914.15
+         Exit:  2019-12-15T18:30:00.000Z @ ₹12267.45
+         Qty:   1
+         P&L:   ₹353.30 (2.97%)
+      23. LONG NIFTY
+         Entry: 2020-01-05T18:30:00.000Z @ ₹12256.50
+         Exit:  2020-01-12T18:30:00.000Z @ ₹12346.10
+         Qty:   1
+         P&L:   ₹89.60 (0.73%)
+      24. LONG NIFTY
+         Entry: 2020-01-19T18:30:00.000Z @ ₹12252.15
+         Exit:  2020-03-08T18:30:00.000Z @ ₹10020.45
+         Qty:   1
+         P&L:   ₹-2231.70 (-18.21%)
+      25. SHORT NIFTY
+         Entry: 2020-03-15T18:30:00.000Z @ ₹8744.35
+         Exit:  2020-03-22T18:30:00.000Z @ ₹8673.50
+         Qty:   1
+         P&L:   ₹-70.85 (-0.81%)
+      26. SHORT NIFTY
+         Entry: 2020-03-29T18:30:00.000Z @ ₹8106.45
+         Exit:  2020-06-07T18:30:00.000Z @ ₹9958.15
+         Qty:   1
+         P&L:   ₹1851.70 (22.84%)
+      27. LONG NIFTY
+         Entry: 2020-08-02T18:30:00.000Z @ ₹11216.90
+         Exit:  2020-08-09T18:30:00.000Z @ ₹11183.05
+         Qty:   1
+         P&L:   ₹-33.85 (-0.30%)
+      28. LONG NIFTY
+         Entry: 2020-08-30T18:30:00.000Z @ ₹11358.35
+         Exit:  2020-10-11T18:30:00.000Z @ ₹11770.25
+         Qty:   1
+         P&L:   ₹411.90 (3.63%)
+      29. LONG NIFTY
+         Entry: 2020-10-25T18:30:00.000Z @ ₹11646.45
+         Exit:  2020-11-08T18:30:00.000Z @ ₹12767.55
+         Qty:   1
+         P&L:   ₹1121.10 (9.63%)
+      30. LONG NIFTY
+         Entry: 2020-12-20T18:30:00.000Z @ ₹13740.40
+         Exit:  2020-12-27T18:30:00.000Z @ ₹14014.80
+         Qty:   1
+         P&L:   ₹274.40 (2.00%)
+      31. LONG NIFTY
+         Entry: 2021-01-17T18:30:00.000Z @ ₹14366.80
+         Exit:  2021-02-14T18:30:00.000Z @ ₹15003.45
+         Qty:   1
+         P&L:   ₹636.65 (4.43%)
+      32. LONG NIFTY
+         Entry: 2021-02-28T18:30:00.000Z @ ₹14963.15
+         Exit:  2021-05-23T18:30:00.000Z @ ₹15455.30
+         Qty:   1
+         P&L:   ₹492.15 (3.29%)
+      33. LONG NIFTY
+         Entry: 2021-06-13T18:30:00.000Z @ ₹15719.85
+         Exit:  2021-06-20T18:30:00.000Z @ ₹15847.60
+         Qty:   1
+         P&L:   ₹127.75 (0.81%)
+      34. LONG NIFTY
+         Entry: 2021-07-04T18:30:00.000Z @ ₹15697.05
+         Exit:  2021-07-11T18:30:00.000Z @ ₹15923.60
+         Qty:   1
+         P&L:   ₹226.55 (1.44%)
+      35. LONG NIFTY
+         Entry: 2021-07-18T18:30:00.000Z @ ₹15850.80
+         Exit:  2021-08-01T18:30:00.000Z @ ₹16254.70
+         Qty:   1
+         P&L:   ₹403.90 (2.55%)
+      36. LONG NIFTY
+         Entry: 2021-10-31T18:30:00.000Z @ ₹17918.90
+         Exit:  2021-11-28T18:30:00.000Z @ ₹17210.30
+         Qty:   1
+         P&L:   ₹-708.60 (-3.95%)
+      37. LONG NIFTY
+         Entry: 2021-12-26T18:30:00.000Z @ ₹17364.25
+         Exit:  2022-01-09T18:30:00.000Z @ ₹18235.50
+         Qty:   1
+         P&L:   ₹871.25 (5.02%)
+      38. LONG NIFTY
+         Entry: 2022-01-16T18:30:00.000Z @ ₹17650.45
+         Exit:  2022-02-20T18:30:00.000Z @ ₹16668.80
+         Qty:   1
+         P&L:   ₹-981.65 (-5.56%)
+      39. LONG NIFTY
+         Entry: 2022-03-13T18:30:00.000Z @ ₹17299.40
+         Exit:  2022-04-03T18:30:00.000Z @ ₹17800.30
+         Qty:   1
+         P&L:   ₹500.90 (2.90%)
+      40. LONG NIFTY
+         Entry: 2022-04-10T18:30:00.000Z @ ₹17467.45
+         Exit:  2022-05-08T18:30:00.000Z @ ₹15767.15
+         Qty:   1
+         P&L:   ₹-1700.30 (-9.73%)
+      41. LONG NIFTY
+         Entry: 2022-07-03T18:30:00.000Z @ ₹16217.50
+         Exit:  2022-07-31T18:30:00.000Z @ ₹17389.05
+         Qty:   1
+         P&L:   ₹1171.55 (7.22%)
+      42. LONG NIFTY
+         Entry: 2022-08-21T18:30:00.000Z @ ₹17582.90
+         Exit:  2022-10-30T18:30:00.000Z @ ₹18127.90
+         Qty:   1
+         P&L:   ₹545.00 (3.10%)
+      43. LONG NIFTY
+         Entry: 2022-12-04T18:30:00.000Z @ ₹18493.25
+         Exit:  2023-01-29T18:30:00.000Z @ ₹17830.80
+         Qty:   1
+         P&L:   ₹-662.45 (-3.58%)
+      44. LONG NIFTY
+         Entry: 2023-04-02T18:30:00.000Z @ ₹17602.00
+         Exit:  2023-04-30T18:30:00.000Z @ ₹18069.95
+         Qty:   1
+         P&L:   ₹467.95 (2.66%)
+      45. LONG NIFTY
+         Entry: 2023-07-23T18:30:00.000Z @ ₹19638.00
+         Exit:  2023-09-17T18:30:00.000Z @ ₹19684.60
+         Qty:   1
+         P&L:   ₹46.60 (0.24%)
+      46. LONG NIFTY
+         Entry: 2023-09-24T18:30:00.000Z @ ₹19638.20
+         Exit:  2023-10-29T18:30:00.000Z @ ₹19226.05
+         Qty:   1
+         P&L:   ₹-412.15 (-2.10%)
+      47. LONG NIFTY
+         Entry: 2023-11-05T18:30:00.000Z @ ₹19522.30
+         Exit:  2023-11-26T18:30:00.000Z @ ₹20255.75
+         Qty:   1
+         P&L:   ₹733.45 (3.76%)
+      48. LONG NIFTY
+         Entry: 2023-12-10T18:30:00.000Z @ ₹21448.70
+         Exit:  2023-12-17T18:30:00.000Z @ ₹21332.35
+         Qty:   1
+         P&L:   ₹-116.35 (-0.54%)
+      49. LONG NIFTY
+         Entry: 2024-01-14T18:30:00.000Z @ ₹21586.95
+         Exit:  2024-01-28T18:30:00.000Z @ ₹21853.30
+         Qty:   1
+         P&L:   ₹266.35 (1.23%)
+      50. LONG NIFTY
+         Entry: 2024-02-11T18:30:00.000Z @ ₹22033.50
+         Exit:  2024-02-18T18:30:00.000Z @ ₹22194.25
+         Qty:   1
+         P&L:   ₹160.75 (0.73%)
+      51. LONG NIFTY
+         Entry: 2024-03-10T18:30:00.000Z @ ₹21996.35
+         Exit:  2024-03-31T18:30:00.000Z @ ₹22523.40
+         Qty:   1
+         P&L:   ₹527.05 (2.40%)
+      52. LONG NIFTY
+         Entry: 2024-04-14T18:30:00.000Z @ ₹22149.70
+         Exit:  2024-05-26T18:30:00.000Z @ ₹22550.45
+         Qty:   1
+         P&L:   ₹400.75 (1.81%)
+      53. LONG NIFTY
+         Entry: 2024-06-02T18:30:00.000Z @ ₹23270.05
+         Exit:  2024-06-09T18:30:00.000Z @ ₹23454.15
+         Qty:   1
+         P&L:   ₹184.10 (0.79%)
+      54. LONG NIFTY
+         Entry: 2024-07-21T18:30:00.000Z @ ₹24851.75
+         Exit:  2024-07-28T18:30:00.000Z @ ₹24699.45
+         Qty:   1
+         P&L:   ₹-152.30 (-0.61%)
+      55. LONG NIFTY
+         Entry: 2024-08-04T18:30:00.000Z @ ₹24364.40
+         Exit:  2024-08-25T18:30:00.000Z @ ₹25247.00
+         Qty:   1
+         P&L:   ₹882.60 (3.62%)
+      56. LONG NIFTY
+         Entry: 2024-09-01T18:30:00.000Z @ ₹24868.50
+         Exit:  2024-09-08T18:30:00.000Z @ ₹25343.55
+         Qty:   1
+         P&L:   ₹475.05 (1.91%)
+      57. LONG NIFTY
+         Entry: 2024-12-01T18:30:00.000Z @ ₹24669.00
+         Exit:  2024-12-29T18:30:00.000Z @ ₹23990.15
+         Qty:   1
+         P&L:   ₹-678.85 (-2.75%)
+
+
+📊 TREND-FOLLOWING STRATEGY ANALYSIS:
+====================================
+1. Weekly Trend-Following (DEMA 52, Supertrend 10,1):
+   Description: Weekly timeframe with DEMA(52) and Supertrend(10,1) - Only 1 active entry at a time
+   Annualized Return: 7.14%
+   Win Rate: 75.44%
+   Break-Even Rate: 0%
+   Max Drawdown: 2.31%
+   Trade Count: 57
+
+🏆 BEST TREND-FOLLOWING CONFIGURATION:
+   Weekly Trend-Following (DEMA 52, Supertrend 10,1)
+   Description: Weekly timeframe with DEMA(52) and Supertrend(10,1) - Only 1 active entry at a time
+   Annualized Return: 7.14%
+   Win Rate: 75.44%
+   Break-Even Rate: 0%
+   Max Drawdown: 2.31%
+   Trade Count: 57
+
+💡 TREND-FOLLOWING ANALYSIS:
+   ⚠️ MODERATE: Annual return >= 5%
+   ✅ EXCELLENT: Break-even rate <= 20%
+   ✅ EXCELLENT: Win rate >= 50%
+
+🎯 TARGET ACHIEVEMENT:
+   ❌ TARGET NOT MET: Need further optimization for 15-20% returns

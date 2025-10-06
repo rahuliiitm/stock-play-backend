@@ -1,6 +1,7 @@
 import { EmaGapAtrConfig } from '../../strategy/services/ema-gap-atr-strategy.service';
 
 export interface BacktestConfig {
+  strategyName?: string;
   symbol: string;
   timeframe: string;
   startDate: Date;
@@ -23,6 +24,10 @@ export interface BacktestResult {
   sharpeRatio: number;
   trades: TradeResult[];
   equityCurve: EquityPoint[];
+  initialCapital: number;
+  finalCapital: number;
+  maxWin: number;
+  maxLoss: number;
 }
 
 export interface TradeResult {

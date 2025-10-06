@@ -89,6 +89,15 @@ Explanation: Limits catastrophic drawdowns; ensures capital survives for next tr
 MIS Orders: Exit at mis_exit_time (default 15:15)
 CNC / Positional: Exit at expiry day cnc_exit_time (default 15:15)
 Explanation: Controls intraday risk and aligns with brokerage/settlement rules.
+All parameters are externally configurable, allowing tuning without changing code.
+
+Symbol, timeframe, and all thresholds can be updated dynamically.
+Logging / Metrics for Forward Test:
+Candle timestamp, price, EMA_F, EMA_S, gap_abs, gap_norm
+Slope_n, RSI, ADX
+Entry/exit signals, lot number, pyramiding step
+Realized P&L, unrealized P&L per candle
+This ensures systematic parameter tuning and risk management.
 
 Flow chart 
 
